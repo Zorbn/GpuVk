@@ -7,7 +7,7 @@
 
 #include "../../deps/stb_image.h"
 
-#include "buffer.hpp"
+#include "Buffer.hpp"
 
 class Image
 {

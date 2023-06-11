@@ -1,5 +1,5 @@
-#include "renderPass.hpp"
-#include "swapchain.hpp"
+#include "RenderPass.hpp"
+#include "Swapchain.hpp"
 
 void RenderPass::CreateCustom(VkDevice device, Swapchain &swapchain, std::function<VkRenderPass()> setupRenderPass,
     std::function<void(const VkExtent2D &extent)> recreateCallback, std::function<void()> cleanupCallback,

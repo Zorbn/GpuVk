@@ -1,4 +1,4 @@
-#include "image.hpp"
+#include "Image.hpp"
 
 Image::Image()
 {

@@ -1,4 +1,4 @@
-#include "pipeline.hpp"
+#include "Pipeline.hpp"
 
 void Pipeline::CreateDescriptorSetLayout(
     VkDevice device, std::function<void(std::vector<VkDescriptorSetLayoutBinding> &)> setupBindings)

@@ -27,13 +27,13 @@
 #include <stdexcept>
 #include <vector>
 
-#include "buffer.hpp"
-#include "commands.hpp"
-#include "model.hpp"
-#include "pipeline.hpp"
-#include "queueFamilyIndices.hpp"
-#include "swapchain.hpp"
-#include "uniformBuffer.hpp"
+#include "Buffer.hpp"
+#include "Commands.hpp"
+#include "Model.hpp"
+#include "Pipeline.hpp"
+#include "QueueFamilyIndices.hpp"
+#include "Swapchain.hpp"
+#include "UniformBuffer.hpp"
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
     const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger);
@@ -82,9 +82,6 @@ class Renderer
     bool _framebufferResized = false;
 
     void InitWindow(const std::string &windowTitle, const uint32_t windowWidth, const uint32_t windowHeight);
-
-    static void FramebufferResizeCallback(SDL_Window *window, int width, int height);
-
     void InitVulkan(const uint32_t maxFramesInFlight,
         std::function<void(VulkanState &vulkanState, SDL_Window *window, int32_t width, int32_t height)> initCallback);
     void CreateInstance();
@@ -111,17 +108,10 @@ class Renderer
 
     void PickPhysicalDevice();
 
-    bool HasStencilComponent(VkFormat format);
-
-    void CreateUniformBuffers();
-
-    uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
     void CreateSyncObjects();
 
     bool IsDeviceSuitable(VkPhysicalDevice device);
     bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
     std::vector<const char *> GetRequiredExtensions();
     bool CheckValidationLayerSupport();
 

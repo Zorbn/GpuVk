@@ -15,20 +15,20 @@ endif()
 
 add_library(
         ${LIB_NAME} STATIC
-        src/vkFrame/renderer.cpp src/vkFrame/renderer.hpp
-        src/vkFrame/buffer.cpp src/vkFrame/buffer.hpp
-        src/vkFrame/commands.cpp src/vkFrame/commands.hpp
-        src/vkFrame/swapchain.cpp src/vkFrame/swapchain.hpp
-        src/vkFrame/image.cpp src/vkFrame/image.hpp
-        src/vkFrame/pipeline.cpp src/vkFrame/pipeline.hpp
-        src/vkFrame/renderPass.cpp src/vkFrame/renderPass.hpp
-        src/vkFrame/uniformBuffer.hpp
-        src/vkFrame/model.hpp
-        src/vkFrame/queueFamilyIndices.hpp
-        src/vkFrame/headerImpls.cpp
+        src/GpuVk/Renderer.cpp src/GpuVk/Renderer.hpp
+        src/GpuVk/Buffer.cpp src/GpuVk/Buffer.hpp
+        src/GpuVk/Commands.cpp src/GpuVk/Commands.hpp
+        src/GpuVk/Swapchain.cpp src/GpuVk/Swapchain.hpp
+        src/GpuVk/Image.cpp src/GpuVk/Image.hpp
+        src/GpuVk/Pipeline.cpp src/GpuVk/Pipeline.hpp
+        src/GpuVk/RenderPass.cpp src/GpuVk/RenderPass.hpp
+        src/GpuVk/UniformBuffer.hpp
+        src/GpuVk/Model.hpp
+        src/GpuVk/QueueFamilyIndices.hpp
+        src/GpuVk/HeaderImpls.cpp
 )
 
-target_include_directories(${LIB_NAME} INTERFACE src/vkFrame/..)
+target_include_directories(${LIB_NAME} INTERFACE src/GpuVk/..)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -47,12 +47,9 @@ target_link_libraries(
 # Examples:
 set(ExampleNames UpdateExample CubesExample RenderTextureExample 2dExample)
 
-add_executable(UpdateExample src/examples/update.cpp)
-add_executable(CubesExample src/examples/cubes.cpp)
-add_executable(RenderTextureExample src/examples/renderTexture.cpp)
-add_executable(2dExample src/examples/2d.cpp)
-
 foreach(EXAMPLE IN LISTS ExampleNames)
+    add_executable(${EXAMPLE} src/Examples/${EXAMPLE}.cpp)
+
     target_link_libraries(
             ${EXAMPLE} PRIVATE
             ${LIB_NAME}

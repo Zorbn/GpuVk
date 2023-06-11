@@ -7,8 +7,8 @@
 #include <functional>
 #include <vector>
 
-#include "image.hpp"
-#include "swapchain.hpp"
+#include "Image.hpp"
+#include "Swapchain.hpp"
 
 class RenderPass
 {

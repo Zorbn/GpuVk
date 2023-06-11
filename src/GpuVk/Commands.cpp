@@ -1,4 +1,4 @@
-#include "commands.hpp"
+#include "Commands.hpp"
 
 VkCommandBuffer Commands::BeginSingleTime(VkDevice device)
 {

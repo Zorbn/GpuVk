@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "image.hpp"
-#include "queueFamilyIndices.hpp"
+#include "Image.hpp"
+#include "QueueFamilyIndices.hpp"
 
 struct SwapchainSupportDetails
 {

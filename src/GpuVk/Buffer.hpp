@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "commands.hpp"
-#include "queueFamilyIndices.hpp"
+#include "Commands.hpp"
+#include "QueueFamilyIndices.hpp"
 
 class Buffer
 {

@@ -1,4 +1,4 @@
-#include "../vkFrame/renderer.hpp"
+#include "../GpuVk/Renderer.hpp"
 
 /*
  * Cubes:

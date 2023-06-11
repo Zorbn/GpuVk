@@ -1,4 +1,4 @@
-#include "swapchain.hpp"
+#include "Swapchain.hpp"
 
 void Swapchain::Create(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, int32_t windowWidth,
     int32_t windowHeight, VkPresentModeKHR preferredPresentMode)

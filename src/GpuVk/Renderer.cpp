@@ -1,4 +1,4 @@
-#include "renderer.hpp"
+#include "Renderer.hpp"
 
 const std::vector<const char *> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
@@ -343,27 +343,6 @@ void Renderer::CreateLogicalDevice()
 
     vkGetDeviceQueue(_vulkanState.Device, indices.GraphicsFamily.value(), 0, &_vulkanState.GraphicsQueue);
     vkGetDeviceQueue(_vulkanState.Device, indices.PresentFamily.value(), 0, &_presentQueue);
-}
-
-bool Renderer::HasStencilComponent(VkFormat format)
-{
-    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-{
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(_vulkanState.PhysicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-    {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-        {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("Failed to find suitable memory type!");
 }
 
 void Renderer::CreateSyncObjects()

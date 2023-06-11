@@ -3,7 +3,7 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
-#include "buffer.hpp"
+#include "Buffer.hpp"
 
 template <typename T> class UniformBuffer
 {

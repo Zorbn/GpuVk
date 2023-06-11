@@ -8,8 +8,8 @@
 #include <iostream>
 #include <vector>
 
-#include "renderPass.hpp"
-#include "swapchain.hpp"
+#include "RenderPass.hpp"
+#include "Swapchain.hpp"
 
 class Pipeline
 {
