@@ -3,3 +3,5 @@ AlignAfterOpenBracket: DontAlign
 AccessModifierOffset: 0
 IndentCaseLabels: true
 BreakBeforeBraces: Allman
+DerivePointerAlignment: false
+PointerAlignment: Left

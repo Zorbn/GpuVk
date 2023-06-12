@@ -1,7 +1,9 @@
 #include "Pipeline.hpp"
 
+#include "Constants.hpp"
+
 void Pipeline::CreateDescriptorSetLayout(
-    VkDevice device, std::function<void(std::vector<VkDescriptorSetLayoutBinding> &)> setupBindings)
+    VkDevice device, std::function<void(std::vector<VkDescriptorSetLayoutBinding>&)> setupBindings)
 {
     _setupBindings = setupBindings;
 
@@ -19,8 +21,8 @@ void Pipeline::CreateDescriptorSetLayout(
     }
 }
 
-void Pipeline::CreateDescriptorPool(const uint32_t maxFramesInFlight, VkDevice device,
-    std::function<void(std::vector<VkDescriptorPoolSize> &poolSizes)> setupPool)
+void Pipeline::CreateDescriptorPool(
+    VkDevice device, std::function<void(std::vector<VkDescriptorPoolSize>& poolSizes)> setupPool)
 {
     _setupPool = setupPool;
 
@@ -31,7 +33,7 @@ void Pipeline::CreateDescriptorPool(const uint32_t maxFramesInFlight, VkDevice d
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(maxFramesInFlight);
+    poolInfo.maxSets = static_cast<uint32_t>(MaxFramesInFlight);
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
     {
@@ -39,44 +41,45 @@ void Pipeline::CreateDescriptorPool(const uint32_t maxFramesInFlight, VkDevice d
     }
 }
 
-void Pipeline::CreateDescriptorSets(const uint32_t maxFramesInFlight, VkDevice device,
-    std::function<void(std::vector<VkWriteDescriptorSet> &, VkDescriptorSet, uint32_t)> setupDescriptor)
+void Pipeline::CreateDescriptorSets(
+    VkDevice device, std::function<void(std::vector<VkWriteDescriptorSet>&, VkDescriptorSet, uint32_t)> setupDescriptor)
 {
     _setupDescriptor = setupDescriptor;
 
-    std::vector<VkDescriptorSetLayout> layouts(maxFramesInFlight, _descriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> layouts(MaxFramesInFlight, _descriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = _descriptorPool;
-    allocInfo.descriptorSetCount = static_cast<uint32_t>(maxFramesInFlight);
+    allocInfo.descriptorSetCount = static_cast<uint32_t>(MaxFramesInFlight);
     allocInfo.pSetLayouts = layouts.data();
 
-    _descriptorSets.resize(maxFramesInFlight);
+    _descriptorSets.resize(MaxFramesInFlight);
     if (vkAllocateDescriptorSets(device, &allocInfo, _descriptorSets.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate descriptor sets!");
     }
 
-    for (uint32_t i = 0; i < maxFramesInFlight; i++)
+    for (uint32_t i = 0; i < MaxFramesInFlight; i++)
     {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         _setupDescriptor(descriptorWrites, _descriptorSets[i], i);
     }
 }
 
-void Pipeline::Bind(VkCommandBuffer commandBuffer, int32_t currentFrame)
+void Pipeline::Bind(const Commands& commands)
 {
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1,
-        &_descriptorSets[currentFrame], 0, nullptr);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    auto currentBufferIndex = commands.GetCurrentBufferIndex();
+    vkCmdBindDescriptorSets(commands.GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1,
+        &_descriptorSets[currentBufferIndex], 0, nullptr);
+    vkCmdBindPipeline(commands.GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
 }
 
-VkShaderModule Pipeline::CreateShaderModule(const std::vector<char> &code, VkDevice device)
+VkShaderModule Pipeline::CreateShaderModule(const std::vector<char>& code, VkDevice device)
 {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
@@ -87,7 +90,7 @@ VkShaderModule Pipeline::CreateShaderModule(const std::vector<char> &code, VkDev
     return shaderModule;
 }
 
-std::vector<char> Pipeline::ReadFile(const std::string &filename)
+std::vector<char> Pipeline::ReadFile(const std::string& filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 

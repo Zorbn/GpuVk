@@ -12,8 +12,8 @@ class Buffer
 {
     public:
     template <typename T>
-    static Buffer FromIndices(VmaAllocator allocator, Commands &commands, VkQueue graphicsQueue, VkDevice device,
-        const std::vector<T> &indices)
+    static Buffer FromIndices(VmaAllocator allocator, const Commands& commands, VkQueue graphicsQueue, VkDevice device,
+        const std::vector<T>& indices)
     {
         size_t indexSize = sizeof(indices[0]);
 
@@ -38,8 +38,8 @@ class Buffer
     }
 
     template <typename T>
-    static Buffer FromVertices(VmaAllocator allocator, Commands &commands, VkQueue graphicsQueue, VkDevice device,
-        const std::vector<T> &vertices)
+    static Buffer FromVertices(VmaAllocator allocator, const Commands& commands, VkQueue graphicsQueue, VkDevice device,
+        const std::vector<T>& vertices)
     {
         VkDeviceSize bufferByteSize = sizeof(vertices[0]) * vertices.size();
 
@@ -57,12 +57,12 @@ class Buffer
 
     Buffer();
     Buffer(VmaAllocator allocator, VkDeviceSize byteSize, VkBufferUsageFlags usage, bool cpuAccessible);
-    void Destroy(VmaAllocator &allocator);
-    void SetData(const void *data);
-    void CopyTo(VmaAllocator &allocator, VkQueue graphicsQueue, VkDevice device, Commands &commands, Buffer &dst);
-    const VkBuffer &GetBuffer();
+    void Destroy(VmaAllocator& allocator);
+    void SetData(const void* data);
+    void CopyTo(VmaAllocator& allocator, VkQueue graphicsQueue, VkDevice device, const Commands& commands, Buffer& dst);
+    const VkBuffer& GetBuffer();
     size_t GetSize();
-    void Map(VmaAllocator allocator, void **data);
+    void Map(VmaAllocator allocator, void** data);
     void Unmap(VmaAllocator allocator);
 
     private:

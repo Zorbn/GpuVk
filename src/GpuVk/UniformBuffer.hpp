@@ -4,25 +4,26 @@
 #include <vulkan/vulkan.h>
 
 #include "Buffer.hpp"
+#include "Constants.hpp"
 
 template <typename T> class UniformBuffer
 {
     public:
-    void Create(const uint32_t maxFramesInFlight, VmaAllocator allocator)
+    void Create(VmaAllocator allocator)
     {
         VkDeviceSize bufferByteSize = sizeof(T);
 
-        _buffers.resize(maxFramesInFlight);
-        _buffersMapped.resize(maxFramesInFlight);
+        _buffers.resize(MaxFramesInFlight);
+        _buffersMapped.resize(MaxFramesInFlight);
 
-        for (size_t i = 0; i < maxFramesInFlight; i++)
+        for (size_t i = 0; i < MaxFramesInFlight; i++)
         {
             _buffers[i] = Buffer(allocator, bufferByteSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true);
             _buffers[i].Map(allocator, &_buffersMapped[i]);
         }
     }
 
-    void Update(const T &data)
+    void Update(const T& data)
     {
         size_t bufferCount = _buffersMapped.size();
         for (size_t i = 0; i < bufferCount; i++)
@@ -31,7 +32,7 @@ template <typename T> class UniformBuffer
         }
     }
 
-    const VkBuffer &GetBuffer(uint32_t i)
+    const VkBuffer& GetBuffer(uint32_t i)
     {
         return _buffers[i].GetBuffer();
     }
@@ -53,5 +54,5 @@ template <typename T> class UniformBuffer
 
     private:
     std::vector<Buffer> _buffers;
-    std::vector<void *> _buffersMapped;
+    std::vector<void*> _buffersMapped;
 };

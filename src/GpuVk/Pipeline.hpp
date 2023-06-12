@@ -15,8 +15,8 @@ class Pipeline
 {
     public:
     template <typename V, typename I>
-    void CreateCustom(const std::string &vertShader, const std::string &fragShader, VkDevice device,
-        RenderPass &renderPass, bool enableTransparency, VkPipelineRasterizationStateCreateInfo rasterizer)
+    void CreateCustom(const std::string& vertShader, const std::string& fragShader, VkDevice device,
+        RenderPass& renderPass, bool enableTransparency, VkPipelineRasterizationStateCreateInfo rasterizer)
     {
         _fragShader = fragShader;
         _vertShader = vertShader;
@@ -174,7 +174,7 @@ class Pipeline
     }
 
     template <typename V, typename I>
-    void Create(const std::string &vertShader, const std::string &fragShader, VkDevice device, RenderPass &renderPass,
+    void Create(const std::string& vertShader, const std::string& fragShader, VkDevice device, RenderPass& renderPass,
         bool enableTransparency)
     {
         VkPipelineRasterizationStateCreateInfo rasterizer{};
@@ -190,29 +190,28 @@ class Pipeline
         CreateCustom<V, I>(vertShader, fragShader, device, renderPass, enableTransparency, rasterizer);
     }
 
-    template <typename V, typename I>
-    void Recreate(VkDevice device, const uint32_t maxFramesInFlight, RenderPass &renderPass)
+    template <typename V, typename I> void Recreate(VkDevice device, RenderPass& renderPass)
     {
         Cleanup(device);
         CreateDescriptorSetLayout(device, _setupBindings);
-        CreateDescriptorPool(maxFramesInFlight, device, _setupPool);
-        CreateDescriptorSets(maxFramesInFlight, device, _setupDescriptor);
+        CreateDescriptorPool(device, _setupPool);
+        CreateDescriptorSets(device, _setupDescriptor);
         Create<V, I>(_vertShader, _fragShader, device, renderPass, _transparencyEnabled);
     }
 
     void CreateDescriptorSetLayout(
-        VkDevice device, std::function<void(std::vector<VkDescriptorSetLayoutBinding> &)> setupBindings);
-    void CreateDescriptorPool(const uint32_t maxFramesInFlight, VkDevice device,
-        std::function<void(std::vector<VkDescriptorPoolSize> &poolSizes)> setupPool);
-    void CreateDescriptorSets(const uint32_t maxFramesInFlight, VkDevice device,
-        std::function<void(std::vector<VkWriteDescriptorSet> &, VkDescriptorSet, uint32_t)> setupDescriptor);
+        VkDevice device, std::function<void(std::vector<VkDescriptorSetLayoutBinding>&)> setupBindings);
+    void CreateDescriptorPool(
+        VkDevice device, std::function<void(std::vector<VkDescriptorPoolSize>& poolSizes)> setupPool);
+    void CreateDescriptorSets(VkDevice device,
+        std::function<void(std::vector<VkWriteDescriptorSet>&, VkDescriptorSet, uint32_t)> setupDescriptor);
     void Cleanup(VkDevice device);
 
-    void Bind(VkCommandBuffer commandBuffer, int32_t currentFrame);
+    void Bind(const Commands& commands);
 
     private:
-    static VkShaderModule CreateShaderModule(const std::vector<char> &code, VkDevice device);
-    static std::vector<char> ReadFile(const std::string &filename);
+    static VkShaderModule CreateShaderModule(const std::vector<char>& code, VkDevice device);
+    static std::vector<char> ReadFile(const std::string& filename);
 
     VkPipelineLayout _pipelineLayout;
     VkPipeline _graphicsPipeline;
@@ -221,9 +220,9 @@ class Pipeline
     VkDescriptorPool _descriptorPool;
     std::vector<VkDescriptorSet> _descriptorSets;
 
-    std::function<void(std::vector<VkDescriptorSetLayoutBinding> &)> _setupBindings;
-    std::function<void(std::vector<VkDescriptorPoolSize> &poolSizes)> _setupPool;
-    std::function<void(std::vector<VkWriteDescriptorSet> &, VkDescriptorSet, uint32_t)> _setupDescriptor;
+    std::function<void(std::vector<VkDescriptorSetLayoutBinding>&)> _setupBindings;
+    std::function<void(std::vector<VkDescriptorPoolSize>& poolSizes)> _setupPool;
+    std::function<void(std::vector<VkWriteDescriptorSet>&, VkDescriptorSet, uint32_t)> _setupDescriptor;
 
     std::string _vertShader;
     std::string _fragShader;

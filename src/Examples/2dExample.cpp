@@ -1,4 +1,5 @@
-#include "../GpuVk/Renderer.hpp"
+#include "../GpuVk/RenderEngine.hpp"
+#include <thread>
 
 /*
  * 2d:
@@ -119,10 +120,10 @@ class SpriteBatch
     float _inverseImageHeight = 0.0f;
 
     public:
-    void Init(VulkanState &vulkanState, const std::string &image, size_t maxSprites)
+    void Init(VulkanState& vulkanState, const std::string& image, size_t maxSprites)
     {
-        _textureImage = Image::CreateTexture(
-            image, vulkanState.Allocator, vulkanState.Commands, vulkanState.GraphicsQueue, vulkanState.Device, false);
+        _textureImage = Image::CreateTexture(image, vulkanState.Allocator, vulkanState.Commands,
+            vulkanState.GraphicsQueue, vulkanState.Device, false);
         _textureImageView = _textureImage.CreateTextureView(vulkanState.Device);
         _textureSampler = _textureImage.CreateTextureSampler(
             vulkanState.PhysicalDevice, vulkanState.Device, VK_FILTER_NEAREST, VK_FILTER_NEAREST);
@@ -131,10 +132,11 @@ class SpriteBatch
         _inverseImageHeight = 1.0f / _textureImage.GetHeight();
 
         _spriteModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(SpriteVertices, SpriteIndices,
-            maxSprites, vulkanState.Allocator, vulkanState.Commands, vulkanState.GraphicsQueue, vulkanState.Device);
+            maxSprites, vulkanState.Allocator, vulkanState.Commands, vulkanState.GraphicsQueue,
+            vulkanState.Device);
     }
 
-    void Begin(VulkanState &vulkanState)
+    void Begin(VulkanState& vulkanState)
     {
         _instances.clear();
     }
@@ -147,18 +149,18 @@ class SpriteBatch
             glm::vec2(texWidth * _inverseImageWidth, texHeight * _inverseImageHeight)});
     }
 
-    void End(VulkanState &vulkanState)
+    void End(VulkanState& vulkanState)
     {
-        _spriteModel.UpdateInstances(
-            _instances, vulkanState.Commands, vulkanState.Allocator, vulkanState.GraphicsQueue, vulkanState.Device);
+        _spriteModel.UpdateInstances(_instances, vulkanState.Commands, vulkanState.Allocator,
+            vulkanState.GraphicsQueue, vulkanState.Device);
     }
 
-    void Draw(const VkCommandBuffer &commandBuffer)
+    void Draw(const VkCommandBuffer& commandBuffer)
     {
         _spriteModel.Draw(commandBuffer);
     }
 
-    void Cleanup(VulkanState &vulkanState)
+    void Cleanup(VulkanState& vulkanState)
     {
         vkDestroySampler(vulkanState.Device, _textureSampler, nullptr);
         vkDestroyImageView(vulkanState.Device, _textureImageView, nullptr);
@@ -167,18 +169,18 @@ class SpriteBatch
         _spriteModel.Destroy(vulkanState.Allocator);
     }
 
-    const VkImageView &GetView()
+    const VkImageView& GetView()
     {
         return _textureImageView;
     }
 
-    const VkSampler &GetSampler()
+    const VkSampler& GetSampler()
     {
         return _textureSampler;
     }
 };
 
-class App
+class App : public IRenderer
 {
     private:
     Pipeline _pipeline;
@@ -191,25 +193,26 @@ class App
     SpriteBatch _spriteBatch;
 
     public:
-    void Init(VulkanState &vulkanState, SDL_Window *window, int32_t width, int32_t height)
+    void Init(VulkanState& vulkanState, SDL_Window* window, int32_t width, int32_t height)
     {
         (void)window;
 
         vulkanState.Swapchain.Create(
             vulkanState.Device, vulkanState.PhysicalDevice, vulkanState.Surface, width, height);
 
-        vulkanState.Commands.CreatePool(vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Surface);
-        vulkanState.Commands.CreateBuffers(vulkanState.Device, vulkanState.MaxFramesInFlight);
+        vulkanState.Commands.CreatePool(
+            vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Surface);
+        vulkanState.Commands.CreateBuffers(vulkanState.Device);
 
-        _ubo.Create(vulkanState.MaxFramesInFlight, vulkanState.Allocator);
+        _ubo.Create(vulkanState.Allocator);
 
         _spriteBatch.Init(vulkanState, "res/cubesImg.png", 30);
 
-        _renderPass.Create(
-            vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Allocator, vulkanState.Swapchain, true, true);
+        _renderPass.Create(vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Allocator,
+            vulkanState.Swapchain, true, true);
 
         _pipeline.CreateDescriptorSetLayout(vulkanState.Device,
-            [&](std::vector<VkDescriptorSetLayoutBinding> &bindings)
+            [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
             {
                 VkDescriptorSetLayoutBinding uboLayoutBinding{};
                 uboLayoutBinding.binding = 0;
@@ -228,17 +231,17 @@ class App
                 bindings.push_back(uboLayoutBinding);
                 bindings.push_back(samplerLayoutBinding);
             });
-        _pipeline.CreateDescriptorPool(vulkanState.MaxFramesInFlight, vulkanState.Device,
+        _pipeline.CreateDescriptorPool(vulkanState.Device,
             [&](std::vector<VkDescriptorPoolSize> poolSizes)
             {
                 poolSizes.resize(2);
                 poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                poolSizes[0].descriptorCount = static_cast<uint32_t>(vulkanState.MaxFramesInFlight);
+                poolSizes[0].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
                 poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                poolSizes[1].descriptorCount = static_cast<uint32_t>(vulkanState.MaxFramesInFlight);
+                poolSizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
             });
-        _pipeline.CreateDescriptorSets(vulkanState.MaxFramesInFlight, vulkanState.Device,
-            [&](std::vector<VkWriteDescriptorSet> &descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
+        _pipeline.CreateDescriptorSets(vulkanState.Device,
+            [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
             {
                 VkDescriptorBufferInfo bufferInfo{};
                 bufferInfo.buffer = _ubo.GetBuffer(i);
@@ -279,7 +282,7 @@ class App
         _clearValues[1].depthStencil = {1.0f, 0};
     }
 
-    void Update(VulkanState &vulkanState)
+    void Update(VulkanState& vulkanState)
     {
         _spriteBatch.Begin(vulkanState);
 
@@ -289,9 +292,9 @@ class App
         _spriteBatch.End(vulkanState);
     }
 
-    void Render(VulkanState &vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
+    void Render(VulkanState& vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
     {
-        const VkExtent2D &extent = vulkanState.Swapchain.GetExtent();
+        const VkExtent2D& extent = vulkanState.Swapchain.GetExtent();
 
         UniformBufferData uboData{};
         uboData.Model = glm::mat4(1.0f);
@@ -314,14 +317,14 @@ class App
         vulkanState.Commands.EndBuffer(currentFrame);
     }
 
-    void Resize(VulkanState &vulkanState, int32_t width, int32_t height)
+    void Resize(VulkanState& vulkanState, int32_t width, int32_t height)
     {
         (void)width, (void)height;
 
         _renderPass.Recreate(vulkanState.Device, vulkanState.Swapchain);
     }
 
-    void Cleanup(VulkanState &vulkanState)
+    void Cleanup(VulkanState& vulkanState)
     {
         _pipeline.Cleanup(vulkanState.Device);
         _renderPass.Cleanup(vulkanState.Device);
@@ -330,44 +333,21 @@ class App
 
         _spriteBatch.Cleanup(vulkanState);
     }
-
-    int Run()
-    {
-        Renderer renderer;
-
-        std::function<void(VulkanState &, SDL_Window *, int32_t, int32_t)> initCallback =
-            [&](VulkanState &vulkanState, SDL_Window *window, int32_t width, int32_t height)
-        { this->Init(vulkanState, window, width, height); };
-
-        std::function<void(VulkanState &)> updateCallback = [&](VulkanState vulkanState) { this->Update(vulkanState); };
-
-        std::function<void(VulkanState &, VkCommandBuffer, uint32_t, uint32_t)> renderCallback =
-            [&](VulkanState &vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
-        { this->Render(vulkanState, commandBuffer, imageIndex, currentFrame); };
-
-        std::function<void(VulkanState &, int32_t, int32_t)> resizeCallback =
-            [&](VulkanState &vulkanState, int32_t width, int32_t height) { this->Resize(vulkanState, width, height); };
-
-        std::function<void(VulkanState &)> cleanupCallback = [&](VulkanState &vulkanState)
-        { this->Cleanup(vulkanState); };
-
-        try
-        {
-            renderer.Run(
-                "2d", 640, 480, 2, initCallback, updateCallback, renderCallback, resizeCallback, cleanupCallback);
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << std::endl;
-            return EXIT_FAILURE;
-        }
-
-        return EXIT_SUCCESS;
-    }
 };
 
 int main()
 {
-    App app;
-    return app.Run();
+    try
+    {
+        RenderEngine renderEngine;
+        App app;
+        renderEngine.Run("2d", 640, 480, app);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

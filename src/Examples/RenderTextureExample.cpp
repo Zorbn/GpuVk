@@ -1,4 +1,4 @@
-#include "../GpuVk/Renderer.hpp"
+#include "../GpuVk/RenderEngine.hpp"
 
 /*
  * RenderTexture:
@@ -81,7 +81,7 @@ struct UniformBufferData
 
 const int32_t MapSize = 4;
 
-const std::array<int32_t, MapSize *MapSize *MapSize> VoxelData = {
+const std::array<int32_t, MapSize* MapSize* MapSize> VoxelData = {
     1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2, // 1
     0, 0, 0, 1, 0, 0, 3, 0, 0, 4, 0, 0, 2, 0, 0, 0, // 2
     3, 2, 1, 4, 2, 0, 0, 1, 1, 0, 0, 2, 4, 1, 2, 3, // 3
@@ -196,7 +196,7 @@ const std::array<std::array<int32_t, 3>, 6> Directions = {{
     {0, -1, 0}, // Down
 }};
 
-class App
+class App : public IRenderer
 {
     private:
     Pipeline _pipeline;
@@ -270,15 +270,16 @@ class App
                 }
     }
 
-    void Init(VulkanState &vulkanState, SDL_Window *window, int32_t width, int32_t height)
+    void Init(VulkanState& vulkanState, SDL_Window* window, int32_t width, int32_t height)
     {
         (void)window;
 
         vulkanState.Swapchain.Create(
             vulkanState.Device, vulkanState.PhysicalDevice, vulkanState.Surface, width, height);
 
-        vulkanState.Commands.CreatePool(vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Surface);
-        vulkanState.Commands.CreateBuffers(vulkanState.Device, vulkanState.MaxFramesInFlight);
+        vulkanState.Commands.CreatePool(
+            vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Surface);
+        vulkanState.Commands.CreateBuffers(vulkanState.Device);
 
         _textureImage = Image::CreateTextureArray("res/cubesImg.png", vulkanState.Allocator, vulkanState.Commands,
             vulkanState.GraphicsQueue, vulkanState.Device, true, 16, 16, 4);
@@ -309,14 +310,15 @@ class App
 
         GenerateVoxelMesh();
         _voxelModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(_voxelVertices, _voxelIndices,
-            2, vulkanState.Allocator, vulkanState.Commands, vulkanState.GraphicsQueue, vulkanState.Device);
+            2, vulkanState.Allocator, vulkanState.Commands, vulkanState.GraphicsQueue,
+            vulkanState.Device);
         std::vector<InstanceData> instances = {
             InstanceData{glm::vec3(0.0, 0.0, 0.0)}, InstanceData{glm::vec3(-2.0, 0.0, -5.0)}};
-        _voxelModel.UpdateInstances(
-            instances, vulkanState.Commands, vulkanState.Allocator, vulkanState.GraphicsQueue, vulkanState.Device);
+        _voxelModel.UpdateInstances(instances, vulkanState.Commands, vulkanState.Allocator,
+            vulkanState.GraphicsQueue, vulkanState.Device);
 
-        const VkExtent2D &extent = vulkanState.Swapchain.GetExtent();
-        _ubo.Create(vulkanState.MaxFramesInFlight, vulkanState.Allocator);
+        const VkExtent2D& extent = vulkanState.Swapchain.GetExtent();
+        _ubo.Create(vulkanState.Allocator);
 
         _renderPass.CreateCustom(
             vulkanState.Device, vulkanState.Swapchain,
@@ -397,17 +399,18 @@ class App
 
                 return renderPass;
             },
-            [&](const VkExtent2D &extent)
+            [&](const VkExtent2D& extent)
             {
-                _colorImage = Image(vulkanState.Allocator, extent.width, extent.height, VK_FORMAT_R32G32B32A32_SFLOAT,
-                    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                _colorImage =
+                    Image(vulkanState.Allocator, extent.width, extent.height, VK_FORMAT_R32G32B32A32_SFLOAT,
+                        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
                 _colorImageView = _colorImage.CreateView(VK_IMAGE_ASPECT_COLOR_BIT, vulkanState.Device);
 
                 VkFormat depthFormat = _renderPass.FindDepthFormat(vulkanState.PhysicalDevice);
-                _depthImage =
-                    Image(vulkanState.Allocator, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                _depthImage = Image(vulkanState.Allocator, extent.width, extent.height, depthFormat,
+                    VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
                 _depthImageView = _depthImage.CreateView(VK_IMAGE_ASPECT_DEPTH_BIT, vulkanState.Device);
             },
             [=]
@@ -418,17 +421,17 @@ class App
                 vkDestroyImageView(vulkanState.Device, _depthImageView, nullptr);
                 _depthImage.Destroy(vulkanState.Allocator);
             },
-            [&](std::vector<VkImageView> &attachments, VkImageView imageView)
+            [&](std::vector<VkImageView>& attachments, VkImageView imageView)
             {
                 attachments.push_back(_colorImageView);
                 attachments.push_back(_depthImageView);
             });
 
-        _finalRenderPass.Create(
-            vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Allocator, vulkanState.Swapchain, true, false);
+        _finalRenderPass.Create(vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Allocator,
+            vulkanState.Swapchain, true, false);
 
         _finalPipeline.CreateDescriptorSetLayout(vulkanState.Device,
-            [&](std::vector<VkDescriptorSetLayoutBinding> &bindings)
+            [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
             {
                 VkDescriptorSetLayoutBinding uboLayoutBinding{};
                 uboLayoutBinding.binding = 0;
@@ -455,19 +458,19 @@ class App
                 bindings.push_back(samplerLayoutBinding);
                 bindings.push_back(depthSamplerLayoutBinding);
             });
-        _finalPipeline.CreateDescriptorPool(vulkanState.MaxFramesInFlight, vulkanState.Device,
+        _finalPipeline.CreateDescriptorPool(vulkanState.Device,
             [&](std::vector<VkDescriptorPoolSize> poolSizes)
             {
                 poolSizes.resize(3);
                 poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                poolSizes[0].descriptorCount = static_cast<uint32_t>(vulkanState.MaxFramesInFlight);
+                poolSizes[0].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
                 poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                poolSizes[1].descriptorCount = static_cast<uint32_t>(vulkanState.MaxFramesInFlight);
+                poolSizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
                 poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                poolSizes[2].descriptorCount = static_cast<uint32_t>(vulkanState.MaxFramesInFlight);
+                poolSizes[2].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
             });
-        _finalPipeline.CreateDescriptorSets(vulkanState.MaxFramesInFlight, vulkanState.Device,
-            [&](std::vector<VkWriteDescriptorSet> &descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
+        _finalPipeline.CreateDescriptorSets(vulkanState.Device,
+            [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
             {
                 VkDescriptorBufferInfo bufferInfo{};
                 bufferInfo.buffer = _ubo.GetBuffer(i);
@@ -517,7 +520,7 @@ class App
             "res/renderTextureFinalShader.frag.spv", vulkanState.Device, _finalRenderPass, false);
 
         _pipeline.CreateDescriptorSetLayout(vulkanState.Device,
-            [&](std::vector<VkDescriptorSetLayoutBinding> &bindings)
+            [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
             {
                 VkDescriptorSetLayoutBinding uboLayoutBinding{};
                 uboLayoutBinding.binding = 0;
@@ -528,15 +531,15 @@ class App
 
                 bindings.push_back(uboLayoutBinding);
             });
-        _pipeline.CreateDescriptorPool(vulkanState.MaxFramesInFlight, vulkanState.Device,
+        _pipeline.CreateDescriptorPool(vulkanState.Device,
             [&](std::vector<VkDescriptorPoolSize> poolSizes)
             {
                 poolSizes.resize(1);
                 poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                poolSizes[0].descriptorCount = static_cast<uint32_t>(vulkanState.MaxFramesInFlight);
+                poolSizes[0].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
             });
-        _pipeline.CreateDescriptorSets(vulkanState.MaxFramesInFlight, vulkanState.Device,
-            [&](std::vector<VkWriteDescriptorSet> &descriptorWrites, VkDescriptorSet descriptorSet, size_t i)
+        _pipeline.CreateDescriptorSets(vulkanState.Device,
+            [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, size_t i)
             {
                 VkDescriptorBufferInfo bufferInfo{};
                 bufferInfo.buffer = _ubo.GetBuffer(i);
@@ -564,13 +567,13 @@ class App
         _clearValues[1].depthStencil = {1.0f, 0};
     }
 
-    void Update(VulkanState &vulkanState)
+    void Update(VulkanState& vulkanState)
     {
     }
 
-    void Render(VulkanState &vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
+    void Render(VulkanState& vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
     {
-        const VkExtent2D &extent = vulkanState.Swapchain.GetExtent();
+        const VkExtent2D& extent = vulkanState.Swapchain.GetExtent();
 
         UniformBufferData uboData{};
         uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -602,17 +605,16 @@ class App
         vulkanState.Commands.EndBuffer(currentFrame);
     }
 
-    void Resize(VulkanState &vulkanState, int32_t width, int32_t height)
+    void Resize(VulkanState& vulkanState, int32_t width, int32_t height)
     {
         (void)width, (void)height;
 
         _renderPass.Recreate(vulkanState.Device, vulkanState.Swapchain);
         _finalRenderPass.Recreate(vulkanState.Device, vulkanState.Swapchain);
-        _finalPipeline.Recreate<VertexData, InstanceData>(
-            vulkanState.Device, vulkanState.MaxFramesInFlight, _finalRenderPass);
+        _finalPipeline.Recreate<VertexData, InstanceData>(vulkanState.Device, _finalRenderPass);
     }
 
-    void Cleanup(VulkanState &vulkanState)
+    void Cleanup(VulkanState& vulkanState)
     {
         _pipeline.Cleanup(vulkanState.Device);
         _finalPipeline.Cleanup(vulkanState.Device);
@@ -629,44 +631,21 @@ class App
 
         _voxelModel.Destroy(vulkanState.Allocator);
     }
-
-    int Run()
-    {
-        Renderer renderer;
-
-        std::function<void(VulkanState &, SDL_Window *, int32_t, int32_t)> initCallback =
-            [&](VulkanState &vulkanState, SDL_Window *window, int32_t width, int32_t height)
-        { this->Init(vulkanState, window, width, height); };
-
-        std::function<void(VulkanState &)> updateCallback = [&](VulkanState vulkanState) { this->Update(vulkanState); };
-
-        std::function<void(VulkanState &, VkCommandBuffer, uint32_t, uint32_t)> renderCallback =
-            [&](VulkanState &vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
-        { this->Render(vulkanState, commandBuffer, imageIndex, currentFrame); };
-
-        std::function<void(VulkanState &, int32_t, int32_t)> resizeCallback =
-            [&](VulkanState &vulkanState, int32_t width, int32_t height) { this->Resize(vulkanState, width, height); };
-
-        std::function<void(VulkanState &)> cleanupCallback = [&](VulkanState &vulkanState)
-        { this->Cleanup(vulkanState); };
-
-        try
-        {
-            renderer.Run("Render Texture", 640, 480, 2, initCallback, updateCallback, renderCallback, resizeCallback,
-                cleanupCallback);
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << std::endl;
-            return EXIT_FAILURE;
-        }
-
-        return EXIT_SUCCESS;
-    }
 };
 
 int main()
 {
-    App app;
-    return app.Run();
+    try
+    {
+        RenderEngine renderEngine;
+        App app;
+        renderEngine.Run("Render Texture", 640, 480, app);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }

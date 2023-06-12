@@ -28,7 +28,7 @@ Buffer::Buffer(VmaAllocator allocator, vk::DeviceSize byteSize, VkBufferUsageFla
     }
 }
 
-void Buffer::CopyTo(VmaAllocator &allocator, VkQueue graphicsQueue, VkDevice device, Commands &commands, Buffer &dst)
+void Buffer::CopyTo(VmaAllocator& allocator, VkQueue graphicsQueue, VkDevice device, const Commands& commands, Buffer& dst)
 {
     if (_byteSize == 0 || dst.GetSize() == 0)
         return;
@@ -42,7 +42,7 @@ void Buffer::CopyTo(VmaAllocator &allocator, VkQueue graphicsQueue, VkDevice dev
     commands.EndSingleTime(commandBuffer, graphicsQueue, device);
 }
 
-const VkBuffer &Buffer::GetBuffer()
+const VkBuffer& Buffer::GetBuffer()
 {
     return _buffer;
 }
@@ -52,7 +52,7 @@ size_t Buffer::GetSize()
     return _byteSize;
 }
 
-void Buffer::Map(VmaAllocator allocator, void **data)
+void Buffer::Map(VmaAllocator allocator, void** data)
 {
     if (_byteSize == 0)
         return;
@@ -68,7 +68,7 @@ void Buffer::Unmap(VmaAllocator allocator)
     vmaUnmapMemory(allocator, _allocation);
 }
 
-void Buffer::Destroy(VmaAllocator &allocator)
+void Buffer::Destroy(VmaAllocator& allocator)
 {
     if (_byteSize == 0)
         return;
@@ -76,7 +76,7 @@ void Buffer::Destroy(VmaAllocator &allocator)
     vmaDestroyBuffer(allocator, _buffer, _allocation);
 }
 
-void Buffer::SetData(const void *data)
+void Buffer::SetData(const void* data)
 {
     if (_byteSize == 0)
         return;

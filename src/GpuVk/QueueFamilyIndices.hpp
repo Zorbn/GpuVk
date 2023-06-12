@@ -23,15 +23,18 @@ struct QueueFamilyIndices
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
         int i = 0;
-        for (const auto &queueFamily : queueFamilies)
+        for (const auto& queueFamily : queueFamilies)
         {
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) indices.GraphicsFamily = i;
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+                indices.GraphicsFamily = i;
 
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-            if (presentSupport) indices.PresentFamily = i;
-            if (indices.IsComplete()) break;
+            if (presentSupport)
+                indices.PresentFamily = i;
+            if (indices.IsComplete())
+                break;
 
             i++;
         }

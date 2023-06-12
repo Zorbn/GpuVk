@@ -51,7 +51,7 @@ Image::Image(VmaAllocator allocator, uint32_t width, uint32_t height, VkFormat f
     _allocation = allocation;
 }
 
-void Image::GenerateMipmaps(Commands &commands, VkQueue graphicsQueue, VkDevice device)
+void Image::GenerateMipmaps(Commands& commands, VkQueue graphicsQueue, VkDevice device)
 {
     VkCommandBuffer commandBuffer = commands.BeginSingleTime(device);
 
@@ -127,10 +127,10 @@ void Image::GenerateMipmaps(Commands &commands, VkQueue graphicsQueue, VkDevice 
     commands.EndSingleTime(commandBuffer, graphicsQueue, device);
 }
 
-Buffer Image::LoadImage(const std::string &image, VmaAllocator allocator, int32_t &width, int32_t &height)
+Buffer Image::LoadImage(const std::string& image, VmaAllocator allocator, int32_t& width, int32_t& height)
 {
     int32_t texChannels;
-    stbi_uc *pixels = stbi_load(image.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(image.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
     size_t imageSize = width * height;
     VkDeviceSize imageByteSize = imageSize * 4;
 
@@ -147,7 +147,7 @@ Buffer Image::LoadImage(const std::string &image, VmaAllocator allocator, int32_
     return stagingBuffer;
 }
 
-Image Image::CreateTexture(const std::string &image, VmaAllocator allocator, Commands &commands, VkQueue graphicsQueue,
+Image Image::CreateTexture(const std::string& image, VmaAllocator allocator, Commands& commands, VkQueue graphicsQueue,
     VkDevice device, bool enableMipmaps)
 {
     int32_t texWidth, texHeight;
@@ -169,7 +169,7 @@ Image Image::CreateTexture(const std::string &image, VmaAllocator allocator, Com
     return textureImage;
 }
 
-Image Image::CreateTextureArray(const std::string &image, VmaAllocator allocator, Commands &commands,
+Image Image::CreateTextureArray(const std::string& image, VmaAllocator allocator, Commands& commands,
     VkQueue graphicsQueue, VkDevice device, bool enableMipmaps, uint32_t width, uint32_t height, uint32_t layers)
 {
     int32_t texWidth, texHeight;
@@ -177,8 +177,8 @@ Image Image::CreateTextureArray(const std::string &image, VmaAllocator allocator
     uint32_t mipMapLevels = enableMipmaps ? CalcMipmapLevels(width, height) : 1;
 
     Image textureImage = Image(allocator, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        mipMapLevels, layers);
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, mipMapLevels,
+        layers);
 
     textureImage.TransitionImageLayout(
         commands, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, graphicsQueue, device);
@@ -252,7 +252,7 @@ VkImageView Image::CreateView(VkImageAspectFlags aspectFlags, VkDevice device)
 }
 
 void Image::TransitionImageLayout(
-    Commands &commands, VkImageLayout oldLayout, VkImageLayout newLayout, VkQueue graphicsQueue, VkDevice device)
+    Commands& commands, VkImageLayout oldLayout, VkImageLayout newLayout, VkQueue graphicsQueue, VkDevice device)
 {
     VkCommandBuffer commandBuffer = commands.BeginSingleTime(device);
 
@@ -307,7 +307,7 @@ void Image::TransitionImageLayout(
 }
 
 void Image::CopyFromBuffer(
-    Buffer &src, Commands &commands, VkQueue graphicsQueue, VkDevice device, uint32_t fullWidth, uint32_t fullHeight)
+    Buffer& src, Commands& commands, VkQueue graphicsQueue, VkDevice device, uint32_t fullWidth, uint32_t fullHeight)
 {
     if (fullWidth == 0)
     {

@@ -5,8 +5,8 @@
 template <typename V, typename I, typename D> class Model
 {
     public:
-    static Model<V, I, D> FromVerticesAndIndices(const std::vector<V> &vertices, const std::vector<I> indices,
-        const size_t maxInstances, VmaAllocator allocator, Commands &commands, VkQueue graphicsQueue, VkDevice device)
+    static Model<V, I, D> FromVerticesAndIndices(const std::vector<V>& vertices, const std::vector<I> indices,
+        const size_t maxInstances, VmaAllocator allocator, const Commands& commands, VkQueue graphicsQueue, VkDevice device)
     {
         Model model = Create(maxInstances, allocator, commands);
         model._size = indices.size();
@@ -17,7 +17,7 @@ template <typename V, typename I, typename D> class Model
         return model;
     }
 
-    static Model<V, I, D> Create(const size_t maxInstances, VmaAllocator allocator, Commands &commands)
+    static Model<V, I, D> Create(const size_t maxInstances, VmaAllocator allocator, const Commands& commands)
     {
         Model model;
 
@@ -29,7 +29,7 @@ template <typename V, typename I, typename D> class Model
         return model;
     };
 
-    void Draw(VkCommandBuffer commandBuffer)
+    void Draw(const Commands& commands)
     {
         if (_vertexBuffer.GetSize() == 0 || _instanceBuffer.GetSize() == 0 || _indexBuffer.GetSize() == 0)
             return;
@@ -42,6 +42,8 @@ template <typename V, typename I, typename D> class Model
         if (sizeof(I) == 4)
             indexType = VK_INDEX_TYPE_UINT32;
 
+        auto commandBuffer = commands.GetBuffer();
+
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_vertexBuffer.GetBuffer(), offsets);
         vkCmdBindVertexBuffers(commandBuffer, 1, 1, &_instanceBuffer.GetBuffer(), offsets);
@@ -49,7 +51,7 @@ template <typename V, typename I, typename D> class Model
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(_size), static_cast<uint32_t>(_instanceCount), 0, 0, 0);
     }
 
-    void Update(const std::vector<V> &vertices, const std::vector<I> &indices, Commands &commands,
+    void Update(const std::vector<V>& vertices, const std::vector<I>& indices, const Commands& commands,
         VmaAllocator allocator, VkQueue graphicsQueue, VkDevice device)
     {
         _size = indices.size();
@@ -63,7 +65,7 @@ template <typename V, typename I, typename D> class Model
         _vertexBuffer = Buffer::FromVertices(allocator, commands, graphicsQueue, device, vertices);
     }
 
-    void UpdateInstances(const std::vector<D> &instances, Commands &commands, VmaAllocator allocator,
+    void UpdateInstances(const std::vector<D>& instances, const Commands& commands, VmaAllocator allocator,
         VkQueue graphicsQueue, VkDevice device)
     {
         _instanceCount = instances.size();
