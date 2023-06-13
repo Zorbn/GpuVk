@@ -1,14 +1,5 @@
 #include "RenderEngine.hpp"
 
-void RenderEngine::Run(
-    const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight, IRenderer& renderer)
-{
-    InitWindow(windowTitle, windowWidth, windowHeight);
-    InitVulkan(renderer);
-    MainLoop(renderer);
-    Cleanup(renderer);
-}
-
 void RenderEngine::InitWindow(const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
@@ -25,15 +16,14 @@ void RenderEngine::InitWindow(const std::string& windowTitle, const uint32_t win
         windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 }
 
-void RenderEngine::InitVulkan(IRenderer& renderer)
+void RenderEngine::InitVulkan()
 {
-    _vulkanState.Init(_window);
+    _gpu = std::make_shared<Gpu>(Gpu());
+    _gpu->Init(_window);
 
     int32_t width;
     int32_t height;
     SDL_Vulkan_GetDrawableSize(_window, &width, &height);
-
-    renderer.Init(_vulkanState.Gpu, _vulkanState, _window, width, height);
 }
 
 void RenderEngine::MainLoop(IRenderer& renderer)
@@ -60,11 +50,11 @@ void RenderEngine::MainLoop(IRenderer& renderer)
             }
         }
 
-        renderer.Update(_vulkanState.Gpu);
+        renderer.Update(_gpu);
         DrawFrame(renderer);
     }
 
-    vkDeviceWaitIdle(_vulkanState.Device);
+    vkDeviceWaitIdle(_gpu->Device);
 }
 
 void RenderEngine::WaitWhileMinimized()
@@ -81,8 +71,7 @@ void RenderEngine::WaitWhileMinimized()
 
 void RenderEngine::Cleanup(IRenderer& renderer)
 {
-    renderer.Cleanup(_vulkanState.Gpu, _vulkanState);
-    _vulkanState.Cleanup();
+    _gpu->Cleanup();
 
     SDL_DestroyWindow(_window);
     SDL_Vulkan_UnloadLibrary();
@@ -91,10 +80,9 @@ void RenderEngine::Cleanup(IRenderer& renderer)
 
 void RenderEngine::DrawFrame(IRenderer& renderer)
 {
-    vkWaitForFences(_vulkanState.Device, 1, &_vulkanState.GetCurrentInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(_gpu->Device, 1, &_gpu->GetCurrentInFlightFence(), VK_TRUE, UINT64_MAX);
 
-    VkResult result = _vulkanState.Gpu.Swapchain.GetNextImage(
-        _vulkanState.Device, _vulkanState.GetCurrentImageAvailableSemaphore());
+    VkResult result = _gpu->Swapchain.GetNextImage(_gpu->Device, _gpu->GetCurrentImageAvailableSemaphore());
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -102,9 +90,8 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
         int32_t width;
         int32_t height;
         SDL_Vulkan_GetDrawableSize(_window, &width, &height);
-        _vulkanState.Gpu.Swapchain.Recreate(
-            _vulkanState.Device, _vulkanState.PhysicalDevice, _vulkanState.Surface, width, height);
-        renderer.Resize(_vulkanState.Gpu, _vulkanState, width, height);
+        _gpu->Swapchain.Recreate(_gpu->Device, _gpu->PhysicalDevice, _gpu->Surface, width, height);
+        renderer.Resize(_gpu, width, height);
         return;
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -112,16 +99,16 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    vkResetFences(_vulkanState.Device, 1, &_vulkanState.GetCurrentInFlightFence());
+    vkResetFences(_gpu->Device, 1, &_gpu->GetCurrentInFlightFence());
 
-    _vulkanState.Gpu.Commands.ResetBuffer();
-    const VkCommandBuffer& currentBuffer = _vulkanState.Gpu.Commands.GetBuffer();
-    renderer.Render(_vulkanState.Gpu);
+    _gpu->Commands.ResetBuffer();
+    const VkCommandBuffer& currentBuffer = _gpu->Commands.GetBuffer();
+    renderer.Render(_gpu);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {_vulkanState.GetCurrentImageAvailableSemaphore()};
+    VkSemaphore waitSemaphores[] = {_gpu->GetCurrentImageAvailableSemaphore()};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -130,12 +117,11 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &currentBuffer;
 
-    VkSemaphore signalSemaphores[] = {_vulkanState.GetCurrentRenderFinishedSemaphore()};
+    VkSemaphore signalSemaphores[] = {_gpu->GetCurrentRenderFinishedSemaphore()};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(_vulkanState.GraphicsQueue, 1, &submitInfo, _vulkanState.GetCurrentInFlightFence()) !=
-        VK_SUCCESS)
+    if (vkQueueSubmit(_gpu->GraphicsQueue, 1, &submitInfo, _gpu->GetCurrentInFlightFence()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
@@ -146,13 +132,13 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = {_vulkanState.Gpu.Swapchain.GetSwapchain()};
+    VkSwapchainKHR swapChains[] = {_gpu->Swapchain.GetSwapchain()};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
 
-    presentInfo.pImageIndices = &_vulkanState.Gpu.Swapchain.GetCurrentImageIndex();
+    presentInfo.pImageIndices = &_gpu->Swapchain.GetCurrentImageIndex();
 
-    result = vkQueuePresentKHR(_vulkanState.PresentQueue, &presentInfo);
+    result = vkQueuePresentKHR(_gpu->PresentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _framebufferResized)
     {
@@ -161,14 +147,13 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
         int32_t width;
         int32_t height;
         SDL_Vulkan_GetDrawableSize(_window, &width, &height);
-        _vulkanState.Gpu.Swapchain.Recreate(
-            _vulkanState.Device, _vulkanState.PhysicalDevice, _vulkanState.Surface, width, height);
-        renderer.Resize(_vulkanState.Gpu, _vulkanState, width, height);
+        _gpu->Swapchain.Recreate(_gpu->Device, _gpu->PhysicalDevice, _gpu->Surface, width, height);
+        renderer.Resize(_gpu, width, height);
     }
     else if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to present swap chain image!");
     }
 
-    _vulkanState.IncrementFrame();
+    _gpu->IncrementFrame();
 }

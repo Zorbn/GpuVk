@@ -1,9 +1,5 @@
 #include "Buffer.hpp"
 
-Buffer::Buffer()
-{
-}
-
 Buffer::Buffer(VmaAllocator allocator, vk::DeviceSize byteSize, VkBufferUsageFlags usage, bool cpuAccessible)
     : _byteSize(byteSize)
 {
@@ -42,12 +38,12 @@ void Buffer::CopyTo(VmaAllocator& allocator, VkQueue graphicsQueue, VkDevice dev
     commands.EndSingleTime(commandBuffer, graphicsQueue, device);
 }
 
-const VkBuffer& Buffer::GetBuffer()
+const VkBuffer& Buffer::GetBuffer() const
 {
     return _buffer;
 }
 
-size_t Buffer::GetSize()
+size_t Buffer::GetSize() const
 {
     return _byteSize;
 }

@@ -32,12 +32,12 @@ template <typename T> class UniformBuffer
         }
     }
 
-    const VkBuffer& GetBuffer(uint32_t i)
+    const VkBuffer& GetBuffer(uint32_t i) const
     {
         return _buffers[i].GetBuffer();
     }
 
-    size_t GetDataSize()
+    size_t GetDataSize() const
     {
         return sizeof(T);
     }

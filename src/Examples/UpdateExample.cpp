@@ -112,7 +112,7 @@ class App : public IRenderer
     std::vector<VkClearValue> _clearValues;
 
     public:
-    void Init(VulkanState& vulkanState, SDL_Window* window, int32_t width, int32_t height)
+    void Init(Gpu& vulkanState, SDL_Window* window, int32_t width, int32_t height)
     {
         (void)window;
 
@@ -212,7 +212,7 @@ class App : public IRenderer
         _clearValues[1].depthStencil = {1.0f, 0};
     }
 
-    void Update(VulkanState& vulkanState)
+    void Update(Gpu& vulkanState)
     {
         uint32_t animFrame = _frameCount / 3000;
         if (_frameCount % 3000 == 0)
@@ -232,7 +232,7 @@ class App : public IRenderer
         _frameCount++;
     }
 
-    void Render(VulkanState& vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
+    void Render(Gpu& vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
     {
         const VkExtent2D& extent = vulkanState.Swapchain.GetExtent();
 
@@ -261,14 +261,14 @@ class App : public IRenderer
         vulkanState.Commands.EndBuffer(currentFrame);
     }
 
-    void Resize(VulkanState& vulkanState, int32_t width, int32_t height)
+    void Resize(Gpu& vulkanState, int32_t width, int32_t height)
     {
         (void)width, (void)height;
 
         _renderPass.Recreate(vulkanState.Device, vulkanState.Swapchain);
     }
 
-    void Cleanup(VulkanState& vulkanState)
+    void Cleanup(Gpu& vulkanState)
     {
         _pipeline.Cleanup(vulkanState.Device);
         _renderPass.Cleanup(vulkanState.Device);

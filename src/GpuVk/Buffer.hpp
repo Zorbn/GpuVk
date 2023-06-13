@@ -55,13 +55,13 @@ class Buffer
         return vertexBuffer;
     }
 
-    Buffer();
+    Buffer() = default;
     Buffer(VmaAllocator allocator, VkDeviceSize byteSize, VkBufferUsageFlags usage, bool cpuAccessible);
     void Destroy(VmaAllocator& allocator);
     void SetData(const void* data);
     void CopyTo(VmaAllocator& allocator, VkQueue graphicsQueue, VkDevice device, const Commands& commands, Buffer& dst);
-    const VkBuffer& GetBuffer();
-    size_t GetSize();
+    const VkBuffer& GetBuffer() const;
+    size_t GetSize() const;
     void Map(VmaAllocator allocator, void** data);
     void Unmap(VmaAllocator allocator);
 

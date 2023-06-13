@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VulkanState.hpp"
+#include "Gpu.hpp"
 
 class IRenderer
 {
@@ -9,9 +9,9 @@ class IRenderer
     {
     }
 
-    virtual void Init(Gpu& gpu, VulkanState& vulkanState, SDL_Window* window, int32_t width, int32_t height) = 0;
-    virtual void Update(Gpu& gpu) = 0;
-    virtual void Render(Gpu& gpu) = 0;
-    virtual void Resize(Gpu& gpu, VulkanState& vulkanState, int32_t width, int32_t height) = 0;
-    virtual void Cleanup(Gpu& gpu, VulkanState& vulkanState) = 0;
+    virtual void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height) = 0;
+    virtual void Update(std::shared_ptr<Gpu> gpu) = 0;
+    virtual void Render(std::shared_ptr<Gpu> gpu) = 0;
+    virtual void Resize(std::shared_ptr<Gpu> gpu, int32_t width, int32_t height) = 0;
+    virtual void Cleanup(std::shared_ptr<Gpu> gpu) = 0;
 };

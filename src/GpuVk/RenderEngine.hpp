@@ -39,18 +39,31 @@
 class RenderEngine
 {
     public:
-    void Run(
-        const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight, IRenderer& renderer);
+    template <class T>
+    typename std::enable_if<std::is_base_of<IRenderer, T>::value>::type Run(
+        const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight, T renderer)
+    {
+        InitWindow(windowTitle, windowWidth, windowHeight);
+        InitVulkan();
+        renderer.Init(_gpu, _window, windowWidth, windowHeight);
+        MainLoop(renderer);
+        // Destruct the renderer before cleaning up the resources it may be using.
+        renderer.Cleanup(_gpu);
+        {
+            auto _ = std::move(renderer);
+        }
+        Cleanup(renderer);
+    }
 
     private:
     SDL_Window* _window;
 
-    VulkanState _vulkanState;
+    std::shared_ptr<Gpu> _gpu;
 
     bool _framebufferResized = false;
 
     void InitWindow(const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight);
-    void InitVulkan(IRenderer&);
+    void InitVulkan();
 
     void MainLoop(IRenderer&);
     void DrawFrame(IRenderer&);

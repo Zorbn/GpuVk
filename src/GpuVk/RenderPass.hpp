@@ -29,9 +29,9 @@ class RenderPass
         VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat FindDepthFormat(VkPhysicalDevice physicalDevice);
 
-    const VkRenderPass& GetRenderPass();
-    const VkSampleCountFlagBits GetMsaaSamples();
-    const bool GetMsaaEnabled();
+    const VkRenderPass& GetRenderPass() const;
+    const VkSampleCountFlagBits GetMsaaSamples() const;
+    const bool GetEnableMsaa() const;
 
     void Cleanup(VkDevice device);
 
@@ -61,7 +61,7 @@ class RenderPass
     Image _colorImage;
     VkImageView _colorImageView;
     VkFormat _imageFormat;
-    bool _depthEnabled = false;
-    bool _msaaEnabled = false;
+    bool _enableDepth = false;
+    bool _enableMsaa = false;
     VkSampleCountFlagBits _msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 };

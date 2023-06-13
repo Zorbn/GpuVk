@@ -27,9 +27,9 @@ void RenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAll
 {
     std::function<VkRenderPass()> setupRenderPass = [&]
     {
-        _depthEnabled = enableDepth;
+        _enableDepth = enableDepth;
         _msaaSamples = enableMsaa ? GetMaxUsableSamples(physicalDevice) : VK_SAMPLE_COUNT_1_BIT;
-        _msaaEnabled = _msaaSamples != VK_SAMPLE_COUNT_1_BIT;
+        _enableMsaa = _msaaSamples != VK_SAMPLE_COUNT_1_BIT;
 
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = _imageFormat;
@@ -40,7 +40,7 @@ void RenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAll
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         colorAttachment.finalLayout =
-            _msaaEnabled ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            _enableMsaa ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = FindDepthFormat(physicalDevice);
@@ -79,12 +79,12 @@ void RenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAll
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
 
-        if (_msaaEnabled)
+        if (_enableMsaa)
         {
             subpass.pResolveAttachments = &colorAttachmentResolveRef;
         }
 
-        if (_depthEnabled)
+        if (_enableDepth)
         {
             subpass.pDepthStencilAttachment = &depthAttachmentRef;
         }
@@ -101,7 +101,7 @@ void RenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAll
 
         std::vector<VkAttachmentDescription> attachments = {colorAttachment, depthAttachment};
 
-        if (_msaaEnabled)
+        if (_enableMsaa)
         {
             attachments.push_back(colorAttachmentResolve);
         }
@@ -142,7 +142,7 @@ void RenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAll
     std::function<void(std::vector<VkImageView>&, VkImageView)> setupFramebuffer =
         [&](std::vector<VkImageView>& attachments, VkImageView imageView)
     {
-        if (_msaaEnabled)
+        if (_enableMsaa)
         {
             attachments.push_back(_colorImageView);
         }
@@ -153,7 +153,7 @@ void RenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAll
 
         attachments.push_back(_depthImageView);
 
-        if (_msaaEnabled)
+        if (_enableMsaa)
         {
             attachments.push_back(imageView);
         }
@@ -219,19 +219,19 @@ void RenderPass::End(const Commands& commands)
     vkCmdEndRenderPass(commands.GetBuffer());
 }
 
-const VkRenderPass& RenderPass::GetRenderPass()
+const VkRenderPass& RenderPass::GetRenderPass() const
 {
     return _renderPass;
 }
 
-const VkSampleCountFlagBits RenderPass::GetMsaaSamples()
+const VkSampleCountFlagBits RenderPass::GetMsaaSamples() const
 {
     return _msaaSamples;
 }
 
-const bool RenderPass::GetMsaaEnabled()
+const bool RenderPass::GetEnableMsaa() const
 {
-    return _msaaEnabled;
+    return _enableMsaa;
 }
 
 void RenderPass::CreateImageViews(VkDevice device)
