@@ -8,47 +8,46 @@
 #include <vector>
 
 #include "Image.hpp"
-#include "Swapchain.hpp"
+#include "Gpu.hpp"
+#include "RenderPassOptions.hpp"
 
 class RenderPass
 {
     public:
-    // TODO: These should be static functions that return a render pass, also do this for other objects.
-    void CreateCustom(VkDevice device, Swapchain& swapchain, std::function<VkRenderPass()> setupRenderPass,
-        std::function<void(const VkExtent2D& extent)> recreateCallback, std::function<void()> cleanupCallback,
-        std::function<void(std::vector<VkImageView>& attachments, VkImageView imageView)> setupFramebuffer);
-    void Create(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator allocator, Swapchain& swapchain,
-        bool enableDepth, bool enableMsaa);
-    void Recreate(VkDevice device, Swapchain& swapchain);
+    RenderPass() = default;
+    RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions);
 
-    void Begin(const Swapchain& swapchain, const Commands& commands, VkExtent2D extent,
-        const std::vector<VkClearValue>& clearValues);
-    void End(const Commands& commands);
-
-    VkFormat FindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates,
-        VkImageTiling tiling, VkFormatFeatureFlags features);
-    VkFormat FindDepthFormat(VkPhysicalDevice physicalDevice);
+    void Begin(const std::vector<VkClearValue>& clearValues);
+    void End();
 
     const VkRenderPass& GetRenderPass() const;
     const VkSampleCountFlagBits GetMsaaSamples() const;
-    const bool GetEnableMsaa() const;
+    const bool IsUsingMsaa() const;
+    const Image& GetColorImage() const;
+    // TODO: This shouldn't be necessary once views are built into images:
+    VkImageView GetColorImageView() const;
 
-    void Cleanup(VkDevice device);
+    void UpdateResources();
+    void Cleanup(); // TODO
 
     private:
-    void CreateImages(VkDevice device, Swapchain& swapchain);
-    void CreateFramebuffers(VkDevice device, VkExtent2D extent);
-    void CreateDepthResources(
-        VmaAllocator allocator, VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent);
-    void CreateColorResources(VmaAllocator allocator, VkDevice device, VkExtent2D extent);
-    void CreateImageViews(VkDevice device);
-    void CleanupForRecreation(VkDevice device);
+    void Create();
+    void CreateImages();
+    void CreateFramebuffers();
+    void CreateDepthResources();
+    void CreateColorResources();
+    void CreateImageViews();
+    void CleanupResources();
+
+    VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
+        VkImageTiling tiling, VkFormatFeatureFlags features);
+    VkFormat FindDepthFormat();
 
     const VkSampleCountFlagBits GetMaxUsableSamples(VkPhysicalDevice physicalDevice);
 
-    std::function<void()> _cleanupCallback;
-    std::function<void(const VkExtent2D&)> _recreateCallback;
-    std::function<void(std::vector<VkImageView>& attachments, VkImageView imageView)> _setupFramebuffer;
+    std::shared_ptr<Gpu> _gpu;
+
+    RenderPassOptions _options;
 
     VkRenderPass _renderPass;
 
@@ -61,7 +60,5 @@ class RenderPass
     Image _colorImage;
     VkImageView _colorImageView;
     VkFormat _imageFormat;
-    bool _enableDepth = false;
-    bool _enableMsaa = false;
     VkSampleCountFlagBits _msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 };

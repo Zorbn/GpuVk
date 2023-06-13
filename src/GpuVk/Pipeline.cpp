@@ -25,7 +25,7 @@ Pipeline& Pipeline::operator=(Pipeline&& other)
 
     _enableTransparency = other._enableTransparency;
 
-    other._gpu = nullptr;
+    other._gpu.reset();
 
     other._pipelineLayout = nullptr;
     other._pipeline = nullptr;
@@ -37,11 +37,6 @@ Pipeline& Pipeline::operator=(Pipeline&& other)
 }
 
 Pipeline::~Pipeline()
-{
-    Cleanup();
-}
-
-void Pipeline::Cleanup()
 {
     if (!_gpu)
         return;
@@ -195,22 +190,8 @@ std::vector<VkVertexInputAttributeDescription> Pipeline::CreateVertexInputAttrib
         VkVertexInputAttributeDescription attributeDescription{};
         attributeDescription.binding = vertexOptions.Binding;
         attributeDescription.location = attribute.Location;
-
-        switch (attribute.Format)
-        {
-            case VertexAttributeFormat::Float:
-                attributeDescription.format = VK_FORMAT_R32_SFLOAT;
-                break;
-            case VertexAttributeFormat::Float2:
-                attributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-                break;
-            case VertexAttributeFormat::Float3:
-                attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-                break;
-        }
-
+        attributeDescription.format = GetVkFormat(attribute.Format);
         attributeDescription.offset = attribute.Offset;
-
         attributeDescriptions.push_back(attributeDescription);
     }
 
@@ -283,7 +264,7 @@ void Pipeline::Create(const PipelineOptions& pipelineOptions, const RenderPass& 
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
-    if (renderPass.GetEnableMsaa())
+    if (renderPass.IsUsingMsaa())
     {
         multisampling.sampleShadingEnable = VK_TRUE;
         multisampling.minSampleShading = 0.2f;

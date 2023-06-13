@@ -26,7 +26,7 @@ add_library(
         src/GpuVk/Model.hpp
         src/GpuVk/QueueFamilyIndices.hpp
         src/GpuVk/HeaderImpls.cpp
-        src/GpuVk/IRenderer.hpp src/GpuVk/Gpu.hpp src/GpuVk/Constants.hpp src/GpuVk/Gpu.cpp src/GpuVk/PipelineOptions.hpp)
+        src/GpuVk/IRenderer.hpp src/GpuVk/Gpu.hpp src/GpuVk/Constants.hpp src/GpuVk/Gpu.cpp src/GpuVk/PipelineOptions.hpp src/GpuVk/Format.cpp src/GpuVk/Format.hpp src/GpuVk/RenderPassOptions.hpp)
 
 target_include_directories(${LIB_NAME} INTERFACE src/GpuVk/..)
 

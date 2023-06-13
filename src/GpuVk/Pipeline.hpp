@@ -61,8 +61,6 @@ class Pipeline
     std::vector<VkVertexInputAttributeDescription> CreateVertexInputAttributeDescriptions(const VertexOptions& vertexOptions);
     void Create(const PipelineOptions& pipelineOptions, const RenderPass& renderPass);
 
-    void Cleanup();
-
     static VkShaderModule CreateShaderModule(const std::vector<char>& code, VkDevice device);
     static std::vector<char> ReadFile(const std::string& filename); // TODO: Move this somewhere else.
 

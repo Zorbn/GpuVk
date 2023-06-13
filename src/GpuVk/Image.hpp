@@ -23,10 +23,10 @@ class Image
     Image(VmaAllocator allocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
         VkImageUsageFlags usage, uint32_t mipmapLevels = 1, uint32_t layers = 1,
         VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
-    VkImageView CreateTextureView(VkDevice device);
+    VkImageView CreateTextureView(VkDevice device) const;
     VkSampler CreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device,
-        VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR);
-    VkImageView CreateView(VkImageAspectFlags aspectFlags, VkDevice device);
+        VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR) const;
+    VkImageView CreateView(VkImageAspectFlags aspectFlags, VkDevice device) const;
     void TransitionImageLayout(
         Commands& commands, VkImageLayout oldLayout, VkImageLayout newLayout, VkQueue graphicsQueue, VkDevice device);
     void CopyFromBuffer(Buffer& src, Commands& commands, VkQueue graphicsQueue, VkDevice device, uint32_t fullWidth = 0,

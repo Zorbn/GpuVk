@@ -4,17 +4,12 @@
 #include <vector>
 #include <string>
 
-enum class VertexAttributeFormat
-{
-    Float,
-    Float2,
-    Float3
-};
+#include "Format.hpp"
 
 struct VertexAttribute
 {
     uint32_t Location;
-    VertexAttributeFormat Format;
+    Format Format;
     uint32_t Offset;
 };
 

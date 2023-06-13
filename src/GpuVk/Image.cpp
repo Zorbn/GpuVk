@@ -191,13 +191,14 @@ Image Image::CreateTextureArray(const std::string& image, VmaAllocator allocator
     return textureImage;
 }
 
-VkImageView Image::CreateTextureView(VkDevice device)
+// TODO: Images should just have a built in view & sampler, so there's no need to create separate ones.
+VkImageView Image::CreateTextureView(VkDevice device) const
 {
     return CreateView(VK_IMAGE_ASPECT_COLOR_BIT, device);
 }
 
 VkSampler Image::CreateTextureSampler(
-    VkPhysicalDevice physicalDevice, VkDevice device, VkFilter minFilter, VkFilter magFilter)
+    VkPhysicalDevice physicalDevice, VkDevice device, VkFilter minFilter, VkFilter magFilter) const
 {
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -228,7 +229,7 @@ VkSampler Image::CreateTextureSampler(
     return textureSampler;
 }
 
-VkImageView Image::CreateView(VkImageAspectFlags aspectFlags, VkDevice device)
+VkImageView Image::CreateView(VkImageAspectFlags aspectFlags, VkDevice device) const
 {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
