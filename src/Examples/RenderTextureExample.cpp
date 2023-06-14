@@ -214,9 +214,6 @@ class App : public IRenderer
     {
         (void)window;
 
-        gpu->Commands.CreatePool(gpu->PhysicalDevice, gpu->Device, gpu->Surface);
-        gpu->Commands.CreateBuffers(gpu->Device);
-
         _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
         _textureImageView = _textureImage.CreateTextureView();
         _textureSampler = _textureImage.CreateTextureSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST);

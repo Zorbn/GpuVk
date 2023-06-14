@@ -215,7 +215,8 @@ void Gpu::Cleanup()
         vkDestroyFence(Device, _inFlightFences[i], nullptr);
     }
 
-    Commands.Destroy(Device);
+    // Commands need to be destroyed before the device.
+    Commands.~Commands();
 
     vkDestroyDevice(Device, nullptr);
 

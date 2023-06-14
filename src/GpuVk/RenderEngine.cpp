@@ -22,6 +22,7 @@ void RenderEngine::InitVulkan(const uint32_t windowWidth, const uint32_t windowH
     _gpu->Init(_window);
 
     _gpu->Swapchain = Swapchain(_gpu, windowWidth, windowHeight);
+    _gpu->Commands = Commands(_gpu);
 }
 
 void RenderEngine::MainLoop(IRenderer& renderer)

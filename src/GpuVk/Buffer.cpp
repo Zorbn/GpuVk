@@ -55,13 +55,13 @@ void Buffer::CopyTo(Buffer& dst)
     if (_byteSize == 0 || dst.GetSize() == 0)
         return;
 
-    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = dst._byteSize;
     vkCmdCopyBuffer(commandBuffer, _buffer, dst._buffer, 1, &copyRegion);
 
-    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
+    _gpu->Commands.EndSingleTime(commandBuffer);
 }
 
 const VkBuffer& Buffer::GetBuffer() const

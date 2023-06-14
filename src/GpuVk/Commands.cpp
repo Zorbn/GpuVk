@@ -1,10 +1,72 @@
 #include "Commands.hpp"
 #include "Constants.hpp"
+#include "Gpu.hpp"
 
-#include <stdexcept>
 #include <cassert>
+#include <stdexcept>
 
-VkCommandBuffer Commands::BeginSingleTime(VkDevice device) const
+Commands::Commands(std::shared_ptr<Gpu> gpu) : _gpu(gpu)
+{
+    CreatePool();
+    CreateBuffers();
+}
+
+Commands::Commands(Commands&& other)
+{
+    *this = std::move(other);
+}
+
+Commands& Commands::operator=(Commands&& other)
+{
+    std::swap(_gpu, other._gpu);
+
+    std::swap(_commandPool, other._commandPool);
+    std::swap(_buffers, other._buffers);
+    std::swap(_currentBufferIndex, other._currentBufferIndex);
+
+    return *this;
+}
+
+Commands::~Commands()
+{
+    if (!_gpu)
+        return;
+
+    vkDestroyCommandPool(_gpu->Device, _commandPool, nullptr);
+}
+
+void Commands::CreatePool()
+{
+    QueueFamilyIndices queueFamilyIndices = QueueFamilyIndices::FindQueueFamilies(_gpu->PhysicalDevice, _gpu->Surface);
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily.value();
+
+    if (vkCreateCommandPool(_gpu->Device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create graphics command pool!");
+    }
+}
+
+void Commands::CreateBuffers()
+{
+    _buffers.resize(MaxFramesInFlight);
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = _commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = (uint32_t)_buffers.size();
+
+    if (vkAllocateCommandBuffers(_gpu->Device, &allocInfo, _buffers.data()) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to allocate command buffers!");
+    }
+}
+
+VkCommandBuffer Commands::BeginSingleTime() const
 {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -13,7 +75,7 @@ VkCommandBuffer Commands::BeginSingleTime(VkDevice device) const
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(_gpu->Device, &allocInfo, &commandBuffer);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -24,7 +86,7 @@ VkCommandBuffer Commands::BeginSingleTime(VkDevice device) const
     return commandBuffer;
 }
 
-void Commands::EndSingleTime(VkCommandBuffer commandBuffer, VkQueue graphicsQueue, VkDevice device) const
+void Commands::EndSingleTime(VkCommandBuffer commandBuffer) const
 {
     vkEndCommandBuffer(commandBuffer);
 
@@ -33,41 +95,10 @@ void Commands::EndSingleTime(VkCommandBuffer commandBuffer, VkQueue graphicsQueu
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
+    vkQueueSubmit(_gpu->GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(_gpu->GraphicsQueue);
 
-    vkFreeCommandBuffers(device, _commandPool, 1, &commandBuffer);
-}
-
-void Commands::CreatePool(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
-{
-    QueueFamilyIndices queueFamilyIndices = QueueFamilyIndices::FindQueueFamilies(physicalDevice, surface);
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily.value();
-
-    if (vkCreateCommandPool(device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create graphics command pool!");
-    }
-}
-
-void Commands::CreateBuffers(VkDevice device)
-{
-    _buffers.resize(MaxFramesInFlight);
-
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = _commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)_buffers.size();
-
-    if (vkAllocateCommandBuffers(device, &allocInfo, _buffers.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate command buffers!");
-    }
+    vkFreeCommandBuffers(_gpu->Device, _commandPool, 1, &commandBuffer);
 }
 
 void Commands::ResetBuffer()
@@ -97,11 +128,6 @@ void Commands::EndBuffer()
 const VkCommandBuffer& Commands::GetBuffer() const
 {
     return _buffers[_currentBufferIndex];
-}
-
-void Commands::Destroy(VkDevice device)
-{
-    vkDestroyCommandPool(device, _commandPool, nullptr);
 }
 
 void Commands::SetCurrentBufferIndex(uint32_t currentBufferIndex)

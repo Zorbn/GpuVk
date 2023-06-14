@@ -72,7 +72,7 @@ Image::~Image()
 
 void Image::GenerateMipmaps()
 {
-    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime();
 
     VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -143,7 +143,7 @@ void Image::GenerateMipmaps()
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
         nullptr, 0, nullptr, 1, &barrier);
 
-    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
+    _gpu->Commands.EndSingleTime(commandBuffer);
 }
 
 Buffer Image::LoadImage(std::shared_ptr<Gpu> gpu, const std::string& image, int32_t& width, int32_t& height)
@@ -265,7 +265,7 @@ VkImageView Image::CreateView(VkImageAspectFlags aspectFlags) const
 
 void Image::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime();
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -314,7 +314,7 @@ void Image::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayo
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
+    _gpu->Commands.EndSingleTime(commandBuffer);
 }
 
 void Image::CopyFromBuffer(Buffer& src, uint32_t fullWidth, uint32_t fullHeight)
@@ -329,7 +329,7 @@ void Image::CopyFromBuffer(Buffer& src, uint32_t fullWidth, uint32_t fullHeight)
         fullHeight = _height;
     }
 
-    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime();
 
     std::vector<VkBufferImageCopy> regions;
     uint32_t texPerRow = fullWidth / _width;
@@ -355,7 +355,7 @@ void Image::CopyFromBuffer(Buffer& src, uint32_t fullWidth, uint32_t fullHeight)
     vkCmdCopyBufferToImage(commandBuffer, src.GetBuffer(), _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         static_cast<uint32_t>(regions.size()), regions.data());
 
-    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
+    _gpu->Commands.EndSingleTime(commandBuffer);
 }
 
 uint32_t Image::CalcMipmapLevels(int32_t texWidth, int32_t texHeight)
