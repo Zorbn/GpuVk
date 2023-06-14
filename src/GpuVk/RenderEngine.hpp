@@ -44,7 +44,7 @@ class RenderEngine
         const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight, T renderer)
     {
         InitWindow(windowTitle, windowWidth, windowHeight);
-        InitVulkan();
+        InitVulkan(windowWidth, windowHeight);
         renderer.Init(_gpu, _window, windowWidth, windowHeight);
         MainLoop(renderer);
         // Destruct the renderer before cleaning up the resources it may be using.
@@ -63,7 +63,7 @@ class RenderEngine
     bool _framebufferResized = false;
 
     void InitWindow(const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight);
-    void InitVulkan();
+    void InitVulkan(const uint32_t windowWidth, const uint32_t windowHeight);
 
     void MainLoop(IRenderer&);
     void DrawFrame(IRenderer&);

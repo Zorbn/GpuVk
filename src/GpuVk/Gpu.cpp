@@ -206,8 +206,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Gpu::DebugCallback(VkDebugUtilsMessageSeverityFla
 
 void Gpu::Cleanup()
 {
-    Swapchain.Cleanup(Device);
-
     vmaDestroyAllocator(Allocator);
 
     for (size_t i = 0; i < MaxFramesInFlight; i++)
@@ -331,22 +329,22 @@ void Gpu::CreateLogicalDevice()
     vkGetDeviceQueue(Device, indices.PresentFamily.value(), 0, &PresentQueue);
 }
 
-bool Gpu::IsDeviceSuitable(VkPhysicalDevice device)
+bool Gpu::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(device, Surface);
+    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(physicalDevice, Surface);
 
-    bool extensionsSupported = CheckDeviceExtensionSupport(device);
+    bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice);
 
     bool swapChainAdequate;
     if (extensionsSupported)
     {
         SwapchainSupportDetails swapchainSupport =
-            Swapchain.QuerySupport(device, Surface);
+            Swapchain::QuerySupport(physicalDevice, Surface);
         swapChainAdequate = !swapchainSupport.Formats.empty() && !swapchainSupport.PresentModes.empty();
     }
 
     VkPhysicalDeviceFeatures supportedFeatures;
-    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
     return indices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }

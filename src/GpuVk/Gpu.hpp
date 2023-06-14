@@ -19,6 +19,7 @@ void DestroyDebugUtilsMessengerEXT(
 class Gpu
 {
     friend class RenderEngine;
+    friend class Swapchain;
 
     public:
     // TODO: Create everything in Gpu for the user, so they don't have to:
@@ -55,7 +56,7 @@ class Gpu
     void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
     std::vector<const char*> GetRequiredExtensions(SDL_Window* window);
     bool CheckValidationLayerSupport();
-    bool IsDeviceSuitable(VkPhysicalDevice device);
+    bool IsDeviceSuitable(VkPhysicalDevice physicalDevice);
     bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

@@ -16,14 +16,12 @@ void RenderEngine::InitWindow(const std::string& windowTitle, const uint32_t win
         windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 }
 
-void RenderEngine::InitVulkan()
+void RenderEngine::InitVulkan(const uint32_t windowWidth, const uint32_t windowHeight)
 {
     _gpu = std::make_shared<Gpu>(Gpu());
     _gpu->Init(_window);
 
-    int32_t width;
-    int32_t height;
-    SDL_Vulkan_GetDrawableSize(_window, &width, &height);
+    _gpu->Swapchain = Swapchain(_gpu, windowWidth, windowHeight);
 }
 
 void RenderEngine::MainLoop(IRenderer& renderer)
@@ -82,7 +80,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
 {
     vkWaitForFences(_gpu->Device, 1, &_gpu->GetCurrentInFlightFence(), VK_TRUE, UINT64_MAX);
 
-    VkResult result = _gpu->Swapchain.GetNextImage(_gpu->Device, _gpu->GetCurrentImageAvailableSemaphore());
+    VkResult result = _gpu->Swapchain.GetNextImage();
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -90,7 +88,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
         int32_t width;
         int32_t height;
         SDL_Vulkan_GetDrawableSize(_window, &width, &height);
-        _gpu->Swapchain.Recreate(_gpu->Device, _gpu->PhysicalDevice, _gpu->Surface, width, height);
+        _gpu->Swapchain.Resize(width, height);
         renderer.Resize(_gpu, width, height);
         return;
     }
@@ -147,7 +145,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
         int32_t width;
         int32_t height;
         SDL_Vulkan_GetDrawableSize(_window, &width, &height);
-        _gpu->Swapchain.Recreate(_gpu->Device, _gpu->PhysicalDevice, _gpu->Surface, width, height);
+        _gpu->Swapchain.Resize(width, height);
         renderer.Resize(_gpu, width, height);
     }
     else if (result != VK_SUCCESS)

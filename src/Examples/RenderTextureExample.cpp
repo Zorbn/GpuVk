@@ -214,8 +214,6 @@ class App : public IRenderer
     {
         (void)window;
 
-        gpu->Swapchain.Create(gpu->Device, gpu->PhysicalDevice, gpu->Surface, width, height);
-
         gpu->Commands.CreatePool(gpu->PhysicalDevice, gpu->Device, gpu->Surface);
         gpu->Commands.CreateBuffers(gpu->Device);
 

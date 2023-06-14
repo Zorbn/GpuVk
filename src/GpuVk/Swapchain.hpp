@@ -11,6 +11,8 @@
 #include "Image.hpp"
 #include "QueueFamilyIndices.hpp"
 
+class Gpu;
+
 struct SwapchainSupportDetails
 {
     VkSurfaceCapabilitiesKHR Capabilities;
@@ -20,19 +22,15 @@ struct SwapchainSupportDetails
 
 class Swapchain
 {
-    public:
-    void Create(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, int32_t windowWidth,
-        int32_t windowHeight, VkPresentModeKHR preferredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR);
-    void Cleanup(VkDevice device);
-    void Recreate(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, int32_t windowWidth,
-        int32_t windowHeight);
+    friend class Gpu;
+    friend class RenderEngine;
 
-    SwapchainSupportDetails QuerySupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+    public:
     VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR ChoosePresentMode(
         const std::vector<VkPresentModeKHR>& availablePresentModes, VkPresentModeKHR preferredPresentMode);
     VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, int32_t windowWidth, int32_t windowHeight);
-    VkResult GetNextImage(VkDevice device, VkSemaphore semaphore);
+    VkResult GetNextImage();
 
     const VkSwapchainKHR& GetSwapchain() const;
     const VkExtent2D& GetExtent() const;
@@ -40,7 +38,23 @@ class Swapchain
     const uint32_t& GetCurrentImageIndex() const;
 
     private:
+    Swapchain() = default;
+    Swapchain(std::shared_ptr<Gpu> gpu, int32_t windowWidth, int32_t windowHeight,
+        VkPresentModeKHR preferredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR);
+    Swapchain(Swapchain&& other);
+    Swapchain& operator=(Swapchain&& other);
+    ~Swapchain();
+
+    void Create(int32_t windowWidth, int32_t windowHeight);
+    void Destroy();
+    void Resize(int32_t windowWidth, int32_t windowHeight);
+
+    static SwapchainSupportDetails QuerySupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+
+    std::shared_ptr<Gpu> _gpu;
+
     VkSwapchainKHR _swapchain;
+    VkPresentModeKHR _preferredPresentMode;
     VkExtent2D _extent;
     VkFormat _imageFormat;
     uint32_t _currentImageIndex = 0;
