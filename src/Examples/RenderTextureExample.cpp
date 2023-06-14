@@ -375,8 +375,8 @@ class App : public IRenderer
     {
 //        _pipeline.Cleanup();
 //        _finalPipeline.Cleanup();
-        _renderPass.Cleanup();
-        _finalRenderPass.Cleanup();
+//        _renderPass.Cleanup();
+//        _finalRenderPass.Cleanup();
 
         _ubo.Destroy(gpu->Allocator);
 

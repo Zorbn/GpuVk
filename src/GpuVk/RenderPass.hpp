@@ -16,6 +16,11 @@ class RenderPass
     public:
     RenderPass() = default;
     RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions);
+    RenderPass(const RenderPass& other) = delete;
+    RenderPass& operator=(const RenderPass& other) = delete;
+    RenderPass(RenderPass&& other);
+    RenderPass& operator=(RenderPass&& other);
+    ~RenderPass();
 
     void Begin(const std::vector<VkClearValue>& clearValues);
     void End();
@@ -28,7 +33,6 @@ class RenderPass
     VkImageView GetColorImageView() const;
 
     void UpdateResources();
-    void Cleanup(); // TODO
 
     private:
     void Create();

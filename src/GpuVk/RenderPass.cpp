@@ -8,6 +8,42 @@ RenderPass::RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOpt
     Create();
 }
 
+RenderPass::RenderPass(RenderPass&& other)
+{
+    *this = std::move(other);
+}
+
+RenderPass& RenderPass::operator=(RenderPass&& other)
+{
+    std::swap(_gpu, other._gpu);
+
+    std::swap(_options, other._options);
+
+    std::swap(_renderPass, other._renderPass);
+
+    std::swap(_images, other._images);
+    std::swap(_imageViews, other._imageViews);
+    std::swap(_framebuffers, other._framebuffers);
+
+    std::swap(_depthImage, other._depthImage);
+    std::swap(_depthImageView, other._depthImageView);
+    std::swap(_colorImage, other._colorImage);
+    std::swap(_colorImageView, other._colorImageView);
+    std::swap(_imageFormat, other._imageFormat);
+    std::swap(_msaaSamples, other._msaaSamples);
+
+    return *this;
+}
+
+RenderPass::~RenderPass()
+{
+    if (!_gpu)
+        return;
+
+    CleanupResources();
+    vkDestroyRenderPass(_gpu->Device, _renderPass, nullptr);
+}
+
 void RenderPass::Create()
 {
     _imageFormat = _gpu->Swapchain.GetImageFormat();
@@ -279,8 +315,8 @@ void RenderPass::CreateColorResources()
             break;
     }
 
-    _colorImage = Image(_gpu->Allocator, extent.width, extent.height, _imageFormat, VK_IMAGE_TILING_OPTIMAL,
-        imageUsage, 1, 1, _msaaSamples);
+    _colorImage = Image(_gpu->Allocator, extent.width, extent.height, _imageFormat, VK_IMAGE_TILING_OPTIMAL, imageUsage,
+        1, 1, _msaaSamples);
     _colorImageView = _colorImage.CreateView(VK_IMAGE_ASPECT_COLOR_BIT, _gpu->Device);
 }
 
@@ -295,8 +331,8 @@ void RenderPass::UpdateResources()
     CreateFramebuffers();
 }
 
-VkFormat RenderPass::FindSupportedFormat(const std::vector<VkFormat>& candidates,
-    VkImageTiling tiling, VkFormatFeatureFlags features)
+VkFormat RenderPass::FindSupportedFormat(
+    const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 {
     for (VkFormat format : candidates)
     {
@@ -338,13 +374,6 @@ void RenderPass::CleanupResources()
     {
         vkDestroyImageView(_gpu->Device, imageView, nullptr);
     }
-}
-
-// TODO: Turn this into a destructor, follow rule of 5.
-void RenderPass::Cleanup()
-{
-    CleanupResources();
-    vkDestroyRenderPass(_gpu->Device, _renderPass, nullptr);
 }
 
 const VkSampleCountFlagBits RenderPass::GetMaxUsableSamples(VkPhysicalDevice physicalDevice)

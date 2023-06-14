@@ -16,8 +16,6 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(
     VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
-// TODO: Rename this to Gfx, GPU, etc, once de-vulkanification is done.
-// TODO: Put external api into Gpu class that is cointained inside of this class, which should be named GpuVk or similar.
 class Gpu
 {
     friend class RenderEngine;

@@ -13,25 +13,17 @@ Pipeline::Pipeline(Pipeline&& other)
 
 Pipeline& Pipeline::operator=(Pipeline&& other)
 {
-    _gpu = other._gpu;
+    std::swap(_gpu, other._gpu);
 
-    _pipelineLayout = other._pipelineLayout;
-    _pipeline = other._pipeline;
+    std::swap(_pipelineLayout, other._pipelineLayout);
+    std::swap(_pipeline, other._pipeline);
 
-    _descriptorSetLayout = other._descriptorSetLayout;
-    _descriptorPool = other._descriptorPool;
-    _descriptorSets = other._descriptorSets;
-    _descriptorLayouts = other._descriptorLayouts;
+    std::swap(_descriptorSetLayout, other._descriptorSetLayout);
+    std::swap(_descriptorPool, other._descriptorPool);
+    std::swap(_descriptorSets, other._descriptorSets);
+    std::swap(_descriptorLayouts, other._descriptorLayouts);
 
-    _enableTransparency = other._enableTransparency;
-
-    other._gpu.reset();
-
-    other._pipelineLayout = nullptr;
-    other._pipeline = nullptr;
-
-    other._descriptorSetLayout = nullptr;
-    other._descriptorPool = nullptr;
+    std::swap(_enableTransparency, other._enableTransparency);
 
     return *this;
 }
