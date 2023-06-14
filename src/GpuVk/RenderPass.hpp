@@ -16,8 +16,6 @@ class RenderPass
     public:
     RenderPass() = default;
     RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions);
-    RenderPass(const RenderPass& other) = delete;
-    RenderPass& operator=(const RenderPass& other) = delete;
     RenderPass(RenderPass&& other);
     RenderPass& operator=(RenderPass&& other);
     ~RenderPass();

@@ -1,10 +1,8 @@
 #include "RenderPass.hpp"
 #include "Swapchain.hpp"
 
-RenderPass::RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions)
+RenderPass::RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions) : _gpu(gpu), _options(renderPassOptions)
 {
-    _gpu = gpu;
-    _options = renderPassOptions;
     Create();
 }
 
@@ -166,7 +164,7 @@ void RenderPass::CreateImages()
 
     for (VkImage vkImage : imagesVk)
     {
-        _images.push_back(Image(vkImage, format));
+        _images.push_back(Image(_gpu, vkImage, format));
     }
 }
 
@@ -240,7 +238,7 @@ void RenderPass::CreateImageViews()
 
     for (uint32_t i = 0; i < _images.size(); i++)
     {
-        _imageViews[i] = _images[i].CreateView(VK_IMAGE_ASPECT_COLOR_BIT, _gpu->Device);
+        _imageViews[i] = _images[i].CreateView(VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
@@ -293,9 +291,9 @@ void RenderPass::CreateDepthResources()
 
     VkFormat depthFormat = FindDepthFormat();
 
-    _depthImage = Image(_gpu->Allocator, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+    _depthImage = Image(_gpu, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 1, 1, _msaaSamples);
-    _depthImageView = _depthImage.CreateView(VK_IMAGE_ASPECT_DEPTH_BIT, _gpu->Device);
+    _depthImageView = _depthImage.CreateView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void RenderPass::CreateColorResources()
@@ -315,9 +313,9 @@ void RenderPass::CreateColorResources()
             break;
     }
 
-    _colorImage = Image(_gpu->Allocator, extent.width, extent.height, _imageFormat, VK_IMAGE_TILING_OPTIMAL, imageUsage,
+    _colorImage = Image(_gpu, extent.width, extent.height, _imageFormat, VK_IMAGE_TILING_OPTIMAL, imageUsage,
         1, 1, _msaaSamples);
-    _colorImageView = _colorImage.CreateView(VK_IMAGE_ASPECT_COLOR_BIT, _gpu->Device);
+    _colorImageView = _colorImage.CreateView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void RenderPass::UpdateResources()
@@ -361,9 +359,7 @@ VkFormat RenderPass::FindDepthFormat()
 void RenderPass::CleanupResources()
 {
     vkDestroyImageView(_gpu->Device, _depthImageView, nullptr);
-    _depthImage.Destroy(_gpu->Allocator);
     vkDestroyImageView(_gpu->Device, _colorImageView, nullptr);
-    _colorImage.Destroy(_gpu->Allocator);
 
     for (auto framebuffer : _framebuffers)
     {

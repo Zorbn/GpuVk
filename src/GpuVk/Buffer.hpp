@@ -4,16 +4,14 @@
 
 #include <stdexcept>
 #include <vector>
+#include <memory>
 
-#include "Commands.hpp"
-#include "QueueFamilyIndices.hpp"
+class Gpu;
 
 class Buffer
 {
     public:
-    template <typename T>
-    static Buffer FromIndices(VmaAllocator allocator, const Commands& commands, VkQueue graphicsQueue, VkDevice device,
-        const std::vector<T>& indices)
+    template <typename T> static Buffer FromIndices(std::shared_ptr<Gpu> gpu, const std::vector<T>& indices)
     {
         size_t indexSize = sizeof(indices[0]);
 
@@ -25,49 +23,50 @@ class Buffer
 
         VkDeviceSize bufferByteSize = indexSize * indices.size();
 
-        Buffer stagingBuffer(allocator, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
+        Buffer stagingBuffer(gpu, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
         stagingBuffer.SetData(indices.data());
 
         Buffer indexBuffer(
-            allocator, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, false);
+            gpu, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, false);
 
-        stagingBuffer.CopyTo(allocator, graphicsQueue, device, commands, indexBuffer);
-        stagingBuffer.Destroy(allocator);
+        stagingBuffer.CopyTo(indexBuffer);
 
         return indexBuffer;
     }
 
-    template <typename T>
-    static Buffer FromVertices(VmaAllocator allocator, const Commands& commands, VkQueue graphicsQueue, VkDevice device,
-        const std::vector<T>& vertices)
+    template <typename T> static Buffer FromVertices(std::shared_ptr<Gpu> gpu, const std::vector<T>& vertices)
     {
         VkDeviceSize bufferByteSize = sizeof(vertices[0]) * vertices.size();
 
-        Buffer stagingBuffer(allocator, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
+        Buffer stagingBuffer(gpu, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
         stagingBuffer.SetData(vertices.data());
 
         Buffer vertexBuffer(
-            allocator, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
+            gpu, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
 
-        stagingBuffer.CopyTo(allocator, graphicsQueue, device, commands, vertexBuffer);
-        stagingBuffer.Destroy(allocator);
+        stagingBuffer.CopyTo(vertexBuffer);
 
         return vertexBuffer;
     }
 
     Buffer() = default;
-    Buffer(VmaAllocator allocator, VkDeviceSize byteSize, VkBufferUsageFlags usage, bool cpuAccessible);
-    void Destroy(VmaAllocator& allocator);
+    Buffer(std::shared_ptr<Gpu> gpu, uint64_t byteSize, VkBufferUsageFlags usage, bool cpuAccessible);
+    Buffer(Buffer&& other);
+    Buffer& operator=(Buffer&& other);
+    ~Buffer();
+
     void SetData(const void* data);
-    void CopyTo(VmaAllocator& allocator, VkQueue graphicsQueue, VkDevice device, const Commands& commands, Buffer& dst);
+    void CopyTo(Buffer& dst);
     const VkBuffer& GetBuffer() const;
     size_t GetSize() const;
-    void Map(VmaAllocator allocator, void** data);
-    void Unmap(VmaAllocator allocator);
+    void Map(void** data);
+    void Unmap();
 
     private:
+    std::shared_ptr<Gpu> _gpu;
+
     VkBuffer _buffer;
     VmaAllocation _allocation;
-    VmaAllocationInfo _allocInfo;
+    VmaAllocationInfo _allocationInfo;
     size_t _byteSize = 0;
 };

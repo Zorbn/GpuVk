@@ -1,24 +1,15 @@
 #include "Image.hpp"
+#include "Buffer.hpp"
+#include "Gpu.hpp"
 
-Image::Image()
+Image::Image(std::shared_ptr<Gpu> gpu, VkImage image, VkFormat format) : _gpu(gpu), _image(image), _format(format)
 {
 }
 
-Image::Image(VkImage image, VkFormat format) : _image(image), _format(format)
+Image::Image(std::shared_ptr<Gpu> gpu, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+    VkImageUsageFlags usage, uint32_t mipmapLevels, uint32_t layerCount, VkSampleCountFlagBits samples)
+    : _gpu(gpu), _format(format), _layerCount(layerCount)
 {
-}
-
-Image::Image(VkImage image, VmaAllocation allocation, VkFormat format)
-    : _image(image), _allocation(allocation), _format(format)
-{
-}
-
-// TODO: Rename layers to layerCount
-Image::Image(VmaAllocator allocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-    VkImageUsageFlags usage, uint32_t mipmapLevels, uint32_t layers, VkSampleCountFlagBits samples)
-    : _format(format), _layerCount(layers)
-{
-
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -39,7 +30,7 @@ Image::Image(VmaAllocator allocator, uint32_t width, uint32_t height, VkFormat f
     VkImage image;
     VmaAllocation allocation;
 
-    if (vmaCreateImage(allocator, &imageInfo, &aci, &image, &allocation, nullptr) != VK_SUCCESS)
+    if (vmaCreateImage(_gpu->Allocator, &imageInfo, &aci, &image, &allocation, nullptr) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate image memory!");
     }
@@ -51,9 +42,37 @@ Image::Image(VmaAllocator allocator, uint32_t width, uint32_t height, VkFormat f
     _allocation = allocation;
 }
 
-void Image::GenerateMipmaps(Commands& commands, VkQueue graphicsQueue, VkDevice device)
+Image::Image(Image&& other)
 {
-    VkCommandBuffer commandBuffer = commands.BeginSingleTime(device);
+    *this = std::move(other);
+}
+
+Image& Image::operator=(Image&& other)
+{
+    std::swap(_gpu, other._gpu);
+
+    std::swap(_image, other._image);
+    std::swap(_allocation, other._allocation);
+    std::swap(_format, other._format);
+    std::swap(_layerCount, other._layerCount);
+    std::swap(_width, other._width);
+    std::swap(_height, other._height);
+    std::swap(_mipmapLevels, other._mipmapLevels);
+
+    return *this;
+}
+
+Image::~Image()
+{
+    if (!_gpu || !_allocation)
+        return;
+
+    vmaDestroyImage(_gpu->Allocator, _image, _allocation);
+}
+
+void Image::GenerateMipmaps()
+{
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
 
     VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -124,10 +143,10 @@ void Image::GenerateMipmaps(Commands& commands, VkQueue graphicsQueue, VkDevice 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
         nullptr, 0, nullptr, 1, &barrier);
 
-    commands.EndSingleTime(commandBuffer, graphicsQueue, device);
+    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
 }
 
-Buffer Image::LoadImage(const std::string& image, VmaAllocator allocator, int32_t& width, int32_t& height)
+Buffer Image::LoadImage(std::shared_ptr<Gpu> gpu, const std::string& image, int32_t& width, int32_t& height)
 {
     int32_t texChannels;
     stbi_uc* pixels = stbi_load(image.c_str(), &width, &height, &texChannels, STBI_rgb_alpha);
@@ -139,7 +158,7 @@ Buffer Image::LoadImage(const std::string& image, VmaAllocator allocator, int32_
         throw std::runtime_error("Failed to load texture image!");
     }
 
-    Buffer stagingBuffer(allocator, imageByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
+    Buffer stagingBuffer(gpu, imageByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
     stagingBuffer.SetData(pixels);
 
     stbi_image_free(pixels);
@@ -147,61 +166,53 @@ Buffer Image::LoadImage(const std::string& image, VmaAllocator allocator, int32_
     return stagingBuffer;
 }
 
-Image Image::CreateTexture(const std::string& image, VmaAllocator allocator, Commands& commands, VkQueue graphicsQueue,
-    VkDevice device, bool enableMipmaps)
+Image Image::CreateTexture(std::shared_ptr<Gpu> gpu, const std::string& image, bool enableMipmaps)
 {
     int32_t texWidth, texHeight;
-    Buffer stagingBuffer = LoadImage(image, allocator, texWidth, texHeight);
+    Buffer stagingBuffer = LoadImage(gpu, image, texWidth, texHeight);
     uint32_t mipMapLevels = enableMipmaps ? CalcMipmapLevels(texWidth, texHeight) : 1;
 
-    Image textureImage = Image(allocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    Image textureImage = Image(gpu, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mipMapLevels);
 
-    textureImage.TransitionImageLayout(
-        commands, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, graphicsQueue, device);
-    textureImage.CopyFromBuffer(stagingBuffer, commands, graphicsQueue, device);
+    textureImage.TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    textureImage.CopyFromBuffer(stagingBuffer);
 
-    stagingBuffer.Destroy(allocator);
-
-    textureImage.GenerateMipmaps(commands, graphicsQueue, device);
+    textureImage.GenerateMipmaps();
 
     return textureImage;
 }
 
-Image Image::CreateTextureArray(const std::string& image, VmaAllocator allocator, Commands& commands,
-    VkQueue graphicsQueue, VkDevice device, bool enableMipmaps, uint32_t width, uint32_t height, uint32_t layers)
+Image Image::CreateTextureArray(std::shared_ptr<Gpu> gpu, const std::string& image, bool enableMipmaps, uint32_t width,
+    uint32_t height, uint32_t layers)
 {
     int32_t texWidth, texHeight;
-    Buffer stagingBuffer = LoadImage(image, allocator, texWidth, texHeight);
+    Buffer stagingBuffer = LoadImage(gpu, image, texWidth, texHeight);
     uint32_t mipMapLevels = enableMipmaps ? CalcMipmapLevels(width, height) : 1;
 
-    Image textureImage = Image(allocator, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+    Image textureImage = Image(gpu, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, mipMapLevels,
         layers);
 
-    textureImage.TransitionImageLayout(
-        commands, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, graphicsQueue, device);
-    textureImage.CopyFromBuffer(stagingBuffer, commands, graphicsQueue, device, texWidth, texHeight);
+    textureImage.TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    textureImage.CopyFromBuffer(stagingBuffer, texWidth, texHeight);
 
-    stagingBuffer.Destroy(allocator);
-
-    textureImage.GenerateMipmaps(commands, graphicsQueue, device);
+    textureImage.GenerateMipmaps();
 
     return textureImage;
 }
 
 // TODO: Images should just have a built in view & sampler, so there's no need to create separate ones.
-VkImageView Image::CreateTextureView(VkDevice device) const
+VkImageView Image::CreateTextureView() const
 {
-    return CreateView(VK_IMAGE_ASPECT_COLOR_BIT, device);
+    return CreateView(VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
-VkSampler Image::CreateTextureSampler(
-    VkPhysicalDevice physicalDevice, VkDevice device, VkFilter minFilter, VkFilter magFilter) const
+VkSampler Image::CreateTextureSampler(VkFilter minFilter, VkFilter magFilter) const
 {
     VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    vkGetPhysicalDeviceProperties(_gpu->PhysicalDevice, &properties);
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -221,7 +232,7 @@ VkSampler Image::CreateTextureSampler(
 
     VkSampler textureSampler;
 
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+    if (vkCreateSampler(_gpu->Device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create texture sampler!");
     }
@@ -229,7 +240,7 @@ VkSampler Image::CreateTextureSampler(
     return textureSampler;
 }
 
-VkImageView Image::CreateView(VkImageAspectFlags aspectFlags, VkDevice device) const
+VkImageView Image::CreateView(VkImageAspectFlags aspectFlags) const
 {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -244,7 +255,7 @@ VkImageView Image::CreateView(VkImageAspectFlags aspectFlags, VkDevice device) c
     viewInfo.subresourceRange.layerCount = _layerCount;
 
     VkImageView imageView;
-    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+    if (vkCreateImageView(_gpu->Device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create texture image view!");
     }
@@ -252,10 +263,9 @@ VkImageView Image::CreateView(VkImageAspectFlags aspectFlags, VkDevice device) c
     return imageView;
 }
 
-void Image::TransitionImageLayout(
-    Commands& commands, VkImageLayout oldLayout, VkImageLayout newLayout, VkQueue graphicsQueue, VkDevice device)
+void Image::TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-    VkCommandBuffer commandBuffer = commands.BeginSingleTime(device);
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -304,11 +314,10 @@ void Image::TransitionImageLayout(
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    commands.EndSingleTime(commandBuffer, graphicsQueue, device);
+    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
 }
 
-void Image::CopyFromBuffer(
-    Buffer& src, Commands& commands, VkQueue graphicsQueue, VkDevice device, uint32_t fullWidth, uint32_t fullHeight)
+void Image::CopyFromBuffer(Buffer& src, uint32_t fullWidth, uint32_t fullHeight)
 {
     if (fullWidth == 0)
     {
@@ -320,7 +329,7 @@ void Image::CopyFromBuffer(
         fullHeight = _height;
     }
 
-    VkCommandBuffer commandBuffer = commands.BeginSingleTime(device);
+    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime(_gpu->Device);
 
     std::vector<VkBufferImageCopy> regions;
     uint32_t texPerRow = fullWidth / _width;
@@ -346,17 +355,12 @@ void Image::CopyFromBuffer(
     vkCmdCopyBufferToImage(commandBuffer, src.GetBuffer(), _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         static_cast<uint32_t>(regions.size()), regions.data());
 
-    commands.EndSingleTime(commandBuffer, graphicsQueue, device);
+    _gpu->Commands.EndSingleTime(commandBuffer, _gpu->GraphicsQueue, _gpu->Device);
 }
 
 uint32_t Image::CalcMipmapLevels(int32_t texWidth, int32_t texHeight)
 {
     return static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-}
-
-void Image::Destroy(VmaAllocator allocator)
-{
-    vmaDestroyImage(allocator, _image, _allocation);
 }
 
 uint32_t Image::GetWidth() const

@@ -214,36 +214,30 @@ class App : public IRenderer
     {
         (void)window;
 
-        gpu->Swapchain.Create(
-            gpu->Device, gpu->PhysicalDevice, gpu->Surface, width, height);
+        gpu->Swapchain.Create(gpu->Device, gpu->PhysicalDevice, gpu->Surface, width, height);
 
-        gpu->Commands.CreatePool(
-            gpu->PhysicalDevice, gpu->Device, gpu->Surface);
+        gpu->Commands.CreatePool(gpu->PhysicalDevice, gpu->Device, gpu->Surface);
         gpu->Commands.CreateBuffers(gpu->Device);
 
-        _textureImage = Image::CreateTextureArray("res/cubesImg.png", gpu->Allocator, gpu->Commands,
-            gpu->GraphicsQueue, gpu->Device, true, 16, 16, 4);
-        _textureImageView = _textureImage.CreateTextureView(gpu->Device);
-        _textureSampler = _textureImage.CreateTextureSampler(
-            gpu->PhysicalDevice, gpu->Device, VK_FILTER_NEAREST, VK_FILTER_NEAREST);
+        _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
+        _textureImageView = _textureImage.CreateTextureView();
+        _textureSampler = _textureImage.CreateTextureSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST);
 
         GenerateVoxelMesh();
-        _voxelModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(_voxelVertices, _voxelIndices,
-            2, gpu->Allocator, gpu->Commands, gpu->GraphicsQueue,
-            gpu->Device);
+        _voxelModel =
+            Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(gpu, _voxelVertices, _voxelIndices, 2);
         std::vector<InstanceData> instances = {
             InstanceData{glm::vec3(0.0, 0.0, 0.0)}, InstanceData{glm::vec3(-2.0, 0.0, -5.0)}};
-        _voxelModel.UpdateInstances(instances, gpu->Commands, gpu->Allocator,
-            gpu->GraphicsQueue, gpu->Device);
+        _voxelModel.UpdateInstances(instances);
 
         const VkExtent2D& extent = gpu->Swapchain.GetExtent();
-        _ubo.Create(gpu->Allocator);
+        _ubo.Create(gpu);
 
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
         renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::ReadFromShader;
         _renderPass = RenderPass(gpu, renderPassOptions);
-        _colorSampler = _renderPass.GetColorImage().CreateTextureSampler(gpu->PhysicalDevice, gpu->Device);
+        _colorSampler = _renderPass.GetColorImage().CreateTextureSampler();
 
         RenderPassOptions finalRenderPassOptions{};
         finalRenderPassOptions.EnableDepth = true;
@@ -373,20 +367,12 @@ class App : public IRenderer
 
     void Cleanup(std::shared_ptr<Gpu> gpu)
     {
-//        _pipeline.Cleanup();
-//        _finalPipeline.Cleanup();
-//        _renderPass.Cleanup();
-//        _finalRenderPass.Cleanup();
-
         _ubo.Destroy(gpu->Allocator);
 
         vkDestroySampler(gpu->Device, _colorSampler, nullptr);
 
         vkDestroySampler(gpu->Device, _textureSampler, nullptr);
         vkDestroyImageView(gpu->Device, _textureImageView, nullptr);
-        _textureImage.Destroy(gpu->Allocator);
-
-        _voxelModel.Destroy(gpu->Allocator);
     }
 };
 

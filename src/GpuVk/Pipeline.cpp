@@ -1,8 +1,7 @@
 #include "Pipeline.hpp"
 
-Pipeline::Pipeline(std::shared_ptr<Gpu> gpu, const PipelineOptions& pipelineOptions, const RenderPass& renderPass)
+Pipeline::Pipeline(std::shared_ptr<Gpu> gpu, const PipelineOptions& pipelineOptions, const RenderPass& renderPass) : _gpu(gpu)
 {
-    _gpu = gpu;
     Create(pipelineOptions, renderPass);
 }
 

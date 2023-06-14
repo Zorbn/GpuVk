@@ -20,8 +20,6 @@ class Pipeline
     public:
     Pipeline() = default;
     Pipeline(std::shared_ptr<Gpu> gpu, const PipelineOptions& pipelineOptions, const RenderPass& renderPass);
-    Pipeline(const Pipeline& other) = delete;
-    Pipeline& operator=(const Pipeline& other) = delete;
     Pipeline(Pipeline&& other);
     Pipeline& operator=(Pipeline&& other);
     ~Pipeline();

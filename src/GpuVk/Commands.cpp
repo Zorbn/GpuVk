@@ -1,6 +1,8 @@
 #include "Commands.hpp"
-
 #include "Constants.hpp"
+
+#include <stdexcept>
+#include <cassert>
 
 VkCommandBuffer Commands::BeginSingleTime(VkDevice device) const
 {

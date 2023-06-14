@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Commands.hpp"
+
 #include <cmath>
 
 #include <vk_mem_alloc.h>
@@ -7,44 +9,45 @@
 
 #include "../../deps/stb_image.h"
 
-#include "Buffer.hpp"
+class Gpu;
+class Buffer;
 
 class Image
 {
     public:
-    static Image CreateTexture(const std::string& image, VmaAllocator allocator, Commands& commands,
-        VkQueue graphicsQueue, VkDevice device, bool enableMipmaps);
-    static Image CreateTextureArray(const std::string& image, VmaAllocator allocator, Commands& commands,
-        VkQueue graphicsQueue, VkDevice device, bool enableMipmaps, uint32_t width, uint32_t height, uint32_t layers);
+    static Image CreateTexture(std::shared_ptr<Gpu> gpu, const std::string& image, bool enableMipmaps);
+    static Image CreateTextureArray(std::shared_ptr<Gpu> gpu, const std::string& image, bool enableMipmaps,
+        uint32_t width, uint32_t height, uint32_t layers);
 
-    Image();
-    Image(VkImage image, VkFormat format);
-    Image(VkImage image, VmaAllocation allocation, VkFormat format);
-    Image(VmaAllocator allocator, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-        VkImageUsageFlags usage, uint32_t mipmapLevels = 1, uint32_t layers = 1,
+    Image() = default;
+    Image(std::shared_ptr<Gpu> gpu, VkImage image, VkFormat format);
+    Image(std::shared_ptr<Gpu> gpu, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+        VkImageUsageFlags usage, uint32_t mipmapLevels = 1, uint32_t layerCount = 1,
         VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
-    VkImageView CreateTextureView(VkDevice device) const;
-    VkSampler CreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device,
-        VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR) const;
-    VkImageView CreateView(VkImageAspectFlags aspectFlags, VkDevice device) const;
-    void TransitionImageLayout(
-        Commands& commands, VkImageLayout oldLayout, VkImageLayout newLayout, VkQueue graphicsQueue, VkDevice device);
-    void CopyFromBuffer(Buffer& src, Commands& commands, VkQueue graphicsQueue, VkDevice device, uint32_t fullWidth = 0,
-        uint32_t fullHeight = 0);
-    void GenerateMipmaps(Commands& commands, VkQueue graphicsQueue, VkDevice device);
-    void Destroy(VmaAllocator allocator);
+    Image(Image&& other);
+    Image& operator=(Image&& other);
+    ~Image();
+
+    VkImageView CreateTextureView() const;
+    VkSampler CreateTextureSampler(VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR) const;
+    VkImageView CreateView(VkImageAspectFlags aspectFlags) const;
+    void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+    void CopyFromBuffer(Buffer& src, uint32_t fullWidth = 0, uint32_t fullHeight = 0);
+    void GenerateMipmaps();
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
 
     private:
+    std::shared_ptr<Gpu> _gpu;
+
     VkImage _image;
-    VmaAllocation _allocation;
+    VmaAllocation _allocation = nullptr;
     VkFormat _format = VK_FORMAT_R32G32B32_SFLOAT;
     uint32_t _layerCount = 1;
     uint32_t _width = 0;
     uint32_t _height = 0;
     uint32_t _mipmapLevels = 1;
 
-    static Buffer LoadImage(const std::string& image, VmaAllocator allocator, int32_t& width, int32_t& height);
+    static Buffer LoadImage(std::shared_ptr<Gpu> gpu, const std::string& image, int32_t& width, int32_t& height);
     static uint32_t CalcMipmapLevels(int32_t texWidth, int32_t texHeight);
 };
