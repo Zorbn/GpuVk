@@ -27,8 +27,6 @@ class RenderPass
     const VkSampleCountFlagBits GetMsaaSamples() const;
     const bool IsUsingMsaa() const;
     const Image& GetColorImage() const;
-    // TODO: This shouldn't be necessary once views are built into images:
-    VkImageView GetColorImageView() const;
 
     void UpdateResources();
 
@@ -38,7 +36,6 @@ class RenderPass
     void CreateFramebuffers();
     void CreateDepthResources();
     void CreateColorResources();
-    void CreateImageViews();
     void CleanupResources();
 
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
@@ -54,13 +51,10 @@ class RenderPass
     VkRenderPass _renderPass;
 
     std::vector<Image> _images;
-    std::vector<VkImageView> _imageViews;
     std::vector<VkFramebuffer> _framebuffers;
 
     Image _depthImage;
-    VkImageView _depthImageView;
     Image _colorImage;
-    VkImageView _colorImageView;
     VkFormat _imageFormat;
     VkSampleCountFlagBits _msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 };

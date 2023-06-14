@@ -1,7 +1,8 @@
 #include "RenderPass.hpp"
 #include "Swapchain.hpp"
 
-RenderPass::RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions) : _gpu(gpu), _options(renderPassOptions)
+RenderPass::RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions)
+    : _gpu(gpu), _options(renderPassOptions)
 {
     Create();
 }
@@ -20,13 +21,10 @@ RenderPass& RenderPass::operator=(RenderPass&& other)
     std::swap(_renderPass, other._renderPass);
 
     std::swap(_images, other._images);
-    std::swap(_imageViews, other._imageViews);
     std::swap(_framebuffers, other._framebuffers);
 
     std::swap(_depthImage, other._depthImage);
-    std::swap(_depthImageView, other._depthImageView);
     std::swap(_colorImage, other._colorImage);
-    std::swap(_colorImageView, other._colorImageView);
     std::swap(_imageFormat, other._imageFormat);
     std::swap(_msaaSamples, other._msaaSamples);
 
@@ -144,7 +142,6 @@ void RenderPass::Create()
     }
 
     CreateImages();
-    CreateImageViews();
     CreateDepthResources();
     CreateColorResources();
     CreateFramebuffers();
@@ -156,15 +153,15 @@ void RenderPass::CreateImages()
     VkFormat format = _gpu->Swapchain.GetImageFormat();
     uint32_t imageCount;
     vkGetSwapchainImagesKHR(_gpu->Device, vkSwapchain, &imageCount, nullptr);
-    std::vector<VkImage> imagesVk;
-    imagesVk.resize(imageCount);
+    std::vector<VkImage> vkImages;
+    vkImages.resize(imageCount);
     _images.clear();
     _images.reserve(imageCount);
-    vkGetSwapchainImagesKHR(_gpu->Device, vkSwapchain, &imageCount, imagesVk.data());
+    vkGetSwapchainImagesKHR(_gpu->Device, vkSwapchain, &imageCount, vkImages.data());
 
-    for (VkImage vkImage : imagesVk)
+    for (VkImage vkImage : vkImages)
     {
-        _images.push_back(Image(_gpu, vkImage, format));
+        _images.push_back(Image(_gpu, vkImage, format, VK_IMAGE_ASPECT_COLOR_BIT));
     }
 }
 
@@ -227,44 +224,29 @@ const Image& RenderPass::GetColorImage() const
     return _colorImage;
 }
 
-VkImageView RenderPass::GetColorImageView() const
-{
-    return _colorImageView;
-}
-
-void RenderPass::CreateImageViews()
-{
-    _imageViews.resize(_images.size());
-
-    for (uint32_t i = 0; i < _images.size(); i++)
-    {
-        _imageViews[i] = _images[i].CreateView(VK_IMAGE_ASPECT_COLOR_BIT);
-    }
-}
-
 void RenderPass::CreateFramebuffers()
 {
     const VkExtent2D& extent = _gpu->Swapchain.GetExtent();
 
-    _framebuffers.resize(_imageViews.size());
+    _framebuffers.resize(_images.size());
 
-    for (size_t i = 0; i < _imageViews.size(); i++)
+    for (size_t i = 0; i < _images.size(); i++)
     {
         std::vector<VkImageView> attachments;
         switch (_options.ColorAttachmentUsage)
         {
             case ColorAttachmentUsage::Present:
-                attachments.push_back(_imageViews[i]);
-                attachments.push_back(_depthImageView);
+                attachments.push_back(_images[i].GetView());
+                attachments.push_back(_depthImage.GetView());
                 break;
             case ColorAttachmentUsage::PresentWithMsaa:
-                attachments.push_back(_colorImageView);
-                attachments.push_back(_depthImageView);
-                attachments.push_back(_imageViews[i]);
+                attachments.push_back(_colorImage.GetView());
+                attachments.push_back(_depthImage.GetView());
+                attachments.push_back(_images[i].GetView());
                 break;
             case ColorAttachmentUsage::ReadFromShader:
-                attachments.push_back(_colorImageView);
-                attachments.push_back(_depthImageView);
+                attachments.push_back(_colorImage.GetView());
+                attachments.push_back(_depthImage.GetView());
 
                 break;
         }
@@ -291,9 +273,8 @@ void RenderPass::CreateDepthResources()
 
     VkFormat depthFormat = FindDepthFormat();
 
-    _depthImage = Image(_gpu, extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 1, 1, _msaaSamples);
-    _depthImageView = _depthImage.CreateView(VK_IMAGE_ASPECT_DEPTH_BIT);
+    _depthImage = Image(_gpu, extent.width, extent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, _msaaSamples);
 }
 
 void RenderPass::CreateColorResources()
@@ -313,9 +294,8 @@ void RenderPass::CreateColorResources()
             break;
     }
 
-    _colorImage = Image(_gpu, extent.width, extent.height, _imageFormat, VK_IMAGE_TILING_OPTIMAL, imageUsage,
-        1, 1, _msaaSamples);
-    _colorImageView = _colorImage.CreateView(VK_IMAGE_ASPECT_COLOR_BIT);
+    _colorImage = Image(
+        _gpu, extent.width, extent.height, _imageFormat, imageUsage, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, _msaaSamples);
 }
 
 void RenderPass::UpdateResources()
@@ -323,7 +303,6 @@ void RenderPass::UpdateResources()
     CleanupResources();
 
     CreateImages();
-    CreateImageViews();
     CreateDepthResources();
     CreateColorResources();
     CreateFramebuffers();
@@ -358,17 +337,9 @@ VkFormat RenderPass::FindDepthFormat()
 
 void RenderPass::CleanupResources()
 {
-    vkDestroyImageView(_gpu->Device, _depthImageView, nullptr);
-    vkDestroyImageView(_gpu->Device, _colorImageView, nullptr);
-
     for (auto framebuffer : _framebuffers)
     {
         vkDestroyFramebuffer(_gpu->Device, framebuffer, nullptr);
-    }
-
-    for (auto imageView : _imageViews)
-    {
-        vkDestroyImageView(_gpu->Device, imageView, nullptr);
     }
 }
 

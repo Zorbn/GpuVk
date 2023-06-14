@@ -38,7 +38,6 @@ Pipeline::~Pipeline()
     vkDestroyDescriptorSetLayout(_gpu->Device, _descriptorSetLayout, nullptr);
 }
 
-// TODO: VkImageView/Sampler should be part of Image
 void Pipeline::UpdateImage(uint32_t binding, VkImageView imageView, VkSampler imageSampler)
 {
     for (uint32_t i = 0; i < MaxFramesInFlight; i++)

@@ -34,7 +34,7 @@ template <typename V, typename I, typename D> class Model
         return model;
     };
 
-    void Draw(const Commands& commands)
+    void Draw()
     {
         if (_vertexBuffer.GetSize() == 0 || _instanceBuffer.GetSize() == 0 || _indexBuffer.GetSize() == 0)
             return;
@@ -47,7 +47,7 @@ template <typename V, typename I, typename D> class Model
         if (sizeof(I) == 4)
             indexType = VK_INDEX_TYPE_UINT32;
 
-        auto commandBuffer = commands.GetBuffer();
+        auto commandBuffer = _gpu->Commands.GetBuffer();
 
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_vertexBuffer.GetBuffer(), offsets);

@@ -150,7 +150,6 @@ class App : public IRenderer
     RenderPass _finalRenderPass;
 
     Image _textureImage;
-    VkImageView _textureImageView;
     VkSampler _textureSampler;
 
     VkSampler _colorSampler;
@@ -215,7 +214,6 @@ class App : public IRenderer
         (void)window;
 
         _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
-        _textureImageView = _textureImage.CreateTextureView();
         _textureSampler = _textureImage.CreateTextureSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST);
 
         GenerateVoxelMesh();
@@ -289,8 +287,9 @@ class App : public IRenderer
         });
         _finalPipeline = Pipeline(gpu, finalPipelineOptions, _finalRenderPass);
         _finalPipeline.UpdateUniform(0, _ubo);
-        _finalPipeline.UpdateImage(1, _textureImageView, _textureSampler);
-        _finalPipeline.UpdateImage(2, _renderPass.GetColorImageView(), _colorSampler);
+        // TODO: Update image should take an image rather than a raw image view:
+        _finalPipeline.UpdateImage(1, _textureImage.GetView(), _textureSampler);
+        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage().GetView(), _colorSampler);
 
         PipelineOptions pipelineOptions{};
         pipelineOptions.VertexShader = "res/renderTextureShader.vert.spv";
@@ -335,7 +334,7 @@ class App : public IRenderer
         _renderPass.Begin(_clearValues);
         _pipeline.Bind();
 
-        _voxelModel.Draw(gpu->Commands);
+        _voxelModel.Draw();
 
         _renderPass.End();
 
@@ -343,7 +342,7 @@ class App : public IRenderer
         _finalRenderPass.Begin(_clearValues);
         _finalPipeline.Bind();
 
-        _voxelModel.Draw(gpu->Commands);
+        _voxelModel.Draw();
 
         _finalRenderPass.End();
 
@@ -356,8 +355,8 @@ class App : public IRenderer
 
         _renderPass.UpdateResources();
         _finalRenderPass.UpdateResources();
-        _finalPipeline.UpdateImage(1, _textureImageView, _textureSampler);
-        _finalPipeline.UpdateImage(2, _renderPass.GetColorImageView(), _colorSampler);
+        _finalPipeline.UpdateImage(1, _textureImage.GetView(), _textureSampler);
+        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage().GetView(), _colorSampler);
     }
 
     void Cleanup(std::shared_ptr<Gpu> gpu)
@@ -365,7 +364,6 @@ class App : public IRenderer
         vkDestroySampler(gpu->Device, _colorSampler, nullptr);
 
         vkDestroySampler(gpu->Device, _textureSampler, nullptr);
-        vkDestroyImageView(gpu->Device, _textureImageView, nullptr);
     }
 };
 
