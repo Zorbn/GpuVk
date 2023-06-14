@@ -229,7 +229,7 @@ class App : public IRenderer
         _voxelModel.UpdateInstances(instances);
 
         const VkExtent2D& extent = gpu->Swapchain.GetExtent();
-        _ubo.Create(gpu);
+        _ubo = UniformBuffer<UniformBufferData>(gpu);
 
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
@@ -365,8 +365,6 @@ class App : public IRenderer
 
     void Cleanup(std::shared_ptr<Gpu> gpu)
     {
-        _ubo.Destroy(gpu->Allocator);
-
         vkDestroySampler(gpu->Device, _colorSampler, nullptr);
 
         vkDestroySampler(gpu->Device, _textureSampler, nullptr);

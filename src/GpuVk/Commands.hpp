@@ -6,6 +6,7 @@
 
 #include "QueueFamilyIndices.hpp"
 
+// TODO: RAII like Swapchain where it isn't user accessible.
 class Commands
 {
     public:

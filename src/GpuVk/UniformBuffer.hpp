@@ -9,7 +9,9 @@
 template <typename T> class UniformBuffer
 {
     public:
-    void Create(std::shared_ptr<Gpu> gpu)
+    UniformBuffer() = default;
+
+    UniformBuffer(std::shared_ptr<Gpu> gpu)
     {
         VkDeviceSize bufferByteSize = sizeof(T);
 
@@ -20,6 +22,28 @@ template <typename T> class UniformBuffer
         {
             _buffers[i] = Buffer(gpu, bufferByteSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, true);
             _buffers[i].Map(&_buffersMapped[i]);
+        }
+    }
+
+    UniformBuffer(UniformBuffer&& other)
+    {
+        *this = std::move(other);
+    }
+
+    UniformBuffer& operator=(UniformBuffer&& other)
+    {
+        std::swap(_buffers, other._buffers);
+        std::swap(_buffersMapped, other._buffersMapped);
+
+        return *this;
+    }
+
+    ~UniformBuffer()
+    {
+        size_t bufferCount = _buffers.size();
+        for (size_t i = 0; i < bufferCount; i++)
+        {
+            _buffers[i].Unmap();
         }
     }
 
@@ -40,15 +64,6 @@ template <typename T> class UniformBuffer
     size_t GetDataSize() const
     {
         return sizeof(T);
-    }
-
-    void Destroy(VmaAllocator allocator)
-    {
-        size_t bufferCount = _buffers.size();
-        for (size_t i = 0; i < bufferCount; i++)
-        {
-            _buffers[i].Unmap();
-        }
     }
 
     private:
