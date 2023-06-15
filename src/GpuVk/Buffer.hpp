@@ -10,6 +10,10 @@ class Gpu;
 
 class Buffer
 {
+    friend class Image;
+    template <typename V, typename I, typename D> friend class Model;
+    template <typename T> friend class UniformBuffer;
+
     public:
     template <typename T> static Buffer FromIndices(std::shared_ptr<Gpu> gpu, const std::vector<T>& indices)
     {
@@ -50,19 +54,19 @@ class Buffer
     }
 
     Buffer() = default;
-    Buffer(std::shared_ptr<Gpu> gpu, uint64_t byteSize, VkBufferUsageFlags usage, bool cpuAccessible);
     Buffer(Buffer&& other);
     Buffer& operator=(Buffer&& other);
     ~Buffer();
 
     void SetData(const void* data);
     void CopyTo(Buffer& dst);
-    const VkBuffer& GetBuffer() const;
     size_t GetSize() const;
     void Map(void** data);
     void Unmap();
 
     private:
+    Buffer(std::shared_ptr<Gpu> gpu, uint64_t byteSize, VkBufferUsageFlags usage, bool cpuAccessible);
+
     std::shared_ptr<Gpu> _gpu;
 
     VkBuffer _buffer;

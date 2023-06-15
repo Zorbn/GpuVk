@@ -4,7 +4,7 @@
 Sampler::Sampler(std::shared_ptr<Gpu> gpu, const Image& image, FilterMode minFilter, FilterMode magFilter) : _gpu(gpu)
 {
     VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(_gpu->PhysicalDevice, &properties);
+    vkGetPhysicalDeviceProperties(_gpu->_physicalDevice, &properties);
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -22,7 +22,7 @@ Sampler::Sampler(std::shared_ptr<Gpu> gpu, const Image& image, FilterMode minFil
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.maxLod = static_cast<float>(image.GetMipmapLevels());
 
-    if (vkCreateSampler(_gpu->Device, &samplerInfo, nullptr, &_sampler) != VK_SUCCESS)
+    if (vkCreateSampler(_gpu->_device, &samplerInfo, nullptr, &_sampler) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create texture sampler!");
     }
@@ -47,5 +47,22 @@ Sampler::~Sampler()
     if (!_gpu)
         return;
 
-    vkDestroySampler(_gpu->Device, _sampler, nullptr);
+    vkDestroySampler(_gpu->_device, _sampler, nullptr);
+}
+
+VkFilter Sampler::GetVkFilter(FilterMode filterMode)
+{
+    VkFilter vkFilter;
+
+    switch (filterMode)
+    {
+        case FilterMode::Linear:
+            vkFilter = VK_FILTER_LINEAR;
+            break;
+        case FilterMode::Nearest:
+            vkFilter = VK_FILTER_NEAREST;
+            break;
+    }
+
+    return vkFilter;
 }

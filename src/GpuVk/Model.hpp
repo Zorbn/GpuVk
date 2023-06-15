@@ -50,9 +50,9 @@ template <typename V, typename I, typename D> class Model
         auto commandBuffer = _gpu->Commands.GetBuffer();
 
         VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_vertexBuffer.GetBuffer(), offsets);
-        vkCmdBindVertexBuffers(commandBuffer, 1, 1, &_instanceBuffer.GetBuffer(), offsets);
-        vkCmdBindIndexBuffer(commandBuffer, _indexBuffer.GetBuffer(), 0, indexType);
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_vertexBuffer._buffer, offsets);
+        vkCmdBindVertexBuffers(commandBuffer, 1, 1, &_instanceBuffer._buffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, _indexBuffer._buffer, 0, indexType);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(_size), static_cast<uint32_t>(_instanceCount), 0, 0, 0);
     }
 
@@ -60,7 +60,7 @@ template <typename V, typename I, typename D> class Model
     {
         _size = indices.size();
 
-        vkDeviceWaitIdle(_gpu->Device);
+        vkDeviceWaitIdle(_gpu->_device);
 
         _indexBuffer = Buffer::FromIndices(_gpu, indices);
         _vertexBuffer = Buffer::FromVertices(_gpu, vertices);

@@ -157,6 +157,7 @@ class App : public IRenderer
     Sampler _colorSampler;
 
     UniformBuffer<UniformBufferData> _ubo;
+    UniformBufferData _uboData{};
     Model<VertexData, uint16_t, InstanceData> _voxelModel;
 
     std::vector<VertexData> _voxelVertices;
@@ -210,6 +211,13 @@ class App : public IRenderer
                 }
     }
 
+    void UpdateProjectionMatrix(int32_t width, int32_t height)
+    {
+        _uboData.Proj =
+            glm::perspective(glm::radians(45.0f), width / static_cast<float>(height), 0.1f, 20.0f);
+        _uboData.Proj[1][1] *= -1;
+    }
+
     void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height)
     {
         (void)window;
@@ -225,6 +233,10 @@ class App : public IRenderer
         _voxelModel.UpdateInstances(instances);
 
         _ubo = UniformBuffer<UniformBufferData>(gpu);
+        _uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        _uboData.View =
+            glm::lookAt(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        UpdateProjectionMatrix(width, height);
 
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
@@ -311,18 +323,7 @@ class App : public IRenderer
 
     void Render(std::shared_ptr<Gpu> gpu)
     {
-        // TODO: This is not a good way to handle getting the window width/height.
-        auto extent = gpu->Swapchain.GetExtent();
-
-        UniformBufferData uboData{};
-        uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        uboData.View =
-            glm::lookAt(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        uboData.Proj =
-            glm::perspective(glm::radians(45.0f), extent.width / static_cast<float>(extent.height), 0.1f, 20.0f);
-        uboData.Proj[1][1] *= -1;
-
-        _ubo.Update(uboData);
+        _ubo.Update(_uboData);
 
         gpu->Commands.BeginBuffer();
 
@@ -347,7 +348,7 @@ class App : public IRenderer
 
     void Resize(std::shared_ptr<Gpu> gpu, int32_t width, int32_t height)
     {
-        (void)width, (void)height;
+        UpdateProjectionMatrix(width, height);
 
         _renderPass.UpdateResources();
         _finalRenderPass.UpdateResources();

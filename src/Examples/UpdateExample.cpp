@@ -117,31 +117,31 @@ class App : public IRenderer
         (void)window;
 
         vulkanState.Swapchain.Create(
-            vulkanState.Device, vulkanState.PhysicalDevice, vulkanState.Surface, width, height);
+            vulkanState._device, vulkanState._physicalDevice, vulkanState._surface, width, height);
 
         vulkanState.Commands.CreatePool(
-            vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Surface);
-        vulkanState.Commands.CreateBuffers(vulkanState.Device);
+            vulkanState._physicalDevice, vulkanState._device, vulkanState._surface);
+        vulkanState.Commands.CreateBuffers(vulkanState._device);
 
-        _textureImage = Image::CreateTexture("res/updateImg.png", vulkanState.Allocator, vulkanState.Commands,
-            vulkanState.GraphicsQueue, vulkanState.Device, true);
-        _textureImageView = _textureImage.CreateTextureView(vulkanState.Device);
+        _textureImage = Image::CreateTexture("res/updateImg.png", vulkanState._allocator, vulkanState.Commands,
+            vulkanState._graphicsQueue, vulkanState._device, true);
+        _textureImageView = _textureImage.CreateTextureView(vulkanState._device);
         _textureSampler =
-            _textureImage.CreateTextureSampler(vulkanState.PhysicalDevice, vulkanState.Device);
+            _textureImage.CreateTextureSampler(vulkanState._physicalDevice, vulkanState._device);
 
         _spriteModel =
-            Model<VertexData, uint16_t, InstanceData>::Create(3, vulkanState.Allocator, vulkanState.Commands);
+            Model<VertexData, uint16_t, InstanceData>::Create(3, vulkanState._allocator, vulkanState.Commands);
         std::vector<InstanceData> instances = {InstanceData{glm::vec3(1.0f, 0.0f, 0.0f)},
             InstanceData{glm::vec3(0.0f, 1.0f, 0.0f)}, InstanceData{glm::vec3(0.0f, 0.0f, 1.0f)}};
-        _spriteModel.UpdateInstances(instances, vulkanState.Commands, vulkanState.Allocator,
-            vulkanState.GraphicsQueue, vulkanState.Device);
+        _spriteModel.UpdateInstances(instances, vulkanState.Commands, vulkanState._allocator,
+            vulkanState._graphicsQueue, vulkanState._device);
 
-        _ubo.Create(vulkanState.Allocator);
+        _ubo.Create(vulkanState._allocator);
 
-        _renderPass.Create(vulkanState.PhysicalDevice, vulkanState.Device, vulkanState.Allocator,
+        _renderPass.Create(vulkanState._physicalDevice, vulkanState._device, vulkanState._allocator,
             vulkanState.Swapchain, true, true);
 
-        _pipeline.CreateDescriptorSetLayout(vulkanState.Device,
+        _pipeline.CreateDescriptorSetLayout(vulkanState._device,
             [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
             {
                 VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -161,7 +161,7 @@ class App : public IRenderer
                 bindings.push_back(uboLayoutBinding);
                 bindings.push_back(samplerLayoutBinding);
             });
-        _pipeline.CreateDescriptorPool(vulkanState.Device,
+        _pipeline.CreateDescriptorPool(vulkanState._device,
             [&](std::vector<VkDescriptorPoolSize> poolSizes)
             {
                 poolSizes.resize(2);
@@ -170,7 +170,7 @@ class App : public IRenderer
                 poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 poolSizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
             });
-        _pipeline.CreateDescriptorSets(vulkanState.Device,
+        _pipeline.CreateDescriptorSets(vulkanState._device,
             [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
             {
                 VkDescriptorBufferInfo bufferInfo{};
@@ -201,11 +201,11 @@ class App : public IRenderer
                 descriptorWrites[1].descriptorCount = 1;
                 descriptorWrites[1].pImageInfo = &imageInfo;
 
-                vkUpdateDescriptorSets(vulkanState.Device, static_cast<uint32_t>(descriptorWrites.size()),
+                vkUpdateDescriptorSets(vulkanState._device, static_cast<uint32_t>(descriptorWrites.size()),
                     descriptorWrites.data(), 0, nullptr);
             });
         _pipeline.Create<VertexData, InstanceData>(
-            "res/updateShader.vert.spv", "res/updateShader.frag.spv", vulkanState.Device, _renderPass, false);
+            "res/updateShader.vert.spv", "res/updateShader.frag.spv", vulkanState._device, _renderPass, false);
 
         _clearValues.resize(2);
         _clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -219,13 +219,13 @@ class App : public IRenderer
         {
             if (animFrame % 2 == 0)
             {
-                _spriteModel.Update(TestVertices2, TestIndices2, vulkanState.Commands, vulkanState.Allocator,
-                    vulkanState.GraphicsQueue, vulkanState.Device);
+                _spriteModel.Update(TestVertices2, TestIndices2, vulkanState.Commands, vulkanState._allocator,
+                    vulkanState._graphicsQueue, vulkanState._device);
             }
             else
             {
-                _spriteModel.Update(TestVertices, TestIndices, vulkanState.Commands, vulkanState.Allocator,
-                    vulkanState.GraphicsQueue, vulkanState.Device);
+                _spriteModel.Update(TestVertices, TestIndices, vulkanState.Commands, vulkanState._allocator,
+                    vulkanState._graphicsQueue, vulkanState._device);
             }
         }
 
@@ -265,21 +265,21 @@ class App : public IRenderer
     {
         (void)width, (void)height;
 
-        _renderPass.Recreate(vulkanState.Device, vulkanState.Swapchain);
+        _renderPass.Recreate(vulkanState._device, vulkanState.Swapchain);
     }
 
     void Cleanup(Gpu& vulkanState)
     {
-        _pipeline.Cleanup(vulkanState.Device);
-        _renderPass.Cleanup(vulkanState.Device);
+        _pipeline.Cleanup(vulkanState._device);
+        _renderPass.Cleanup(vulkanState._device);
 
-        _ubo.Destroy(vulkanState.Allocator);
+        _ubo.Destroy(vulkanState._allocator);
 
-        vkDestroySampler(vulkanState.Device, _textureSampler, nullptr);
-        vkDestroyImageView(vulkanState.Device, _textureImageView, nullptr);
-        _textureImage.Destroy(vulkanState.Allocator);
+        vkDestroySampler(vulkanState._device, _textureSampler, nullptr);
+        vkDestroyImageView(vulkanState._device, _textureImageView, nullptr);
+        _textureImage.Destroy(vulkanState._allocator);
 
-        _spriteModel.Destroy(vulkanState.Allocator);
+        _spriteModel.Destroy(vulkanState._allocator);
     }
 };
 

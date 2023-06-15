@@ -53,7 +53,7 @@ void RenderEngine::MainLoop(IRenderer& renderer)
         DrawFrame(renderer);
     }
 
-    vkDeviceWaitIdle(_gpu->Device);
+    vkDeviceWaitIdle(_gpu->_device);
 }
 
 void RenderEngine::WaitWhileMinimized()
@@ -79,7 +79,7 @@ void RenderEngine::Cleanup(IRenderer& renderer)
 
 void RenderEngine::DrawFrame(IRenderer& renderer)
 {
-    vkWaitForFences(_gpu->Device, 1, &_gpu->GetCurrentInFlightFence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(_gpu->_device, 1, &_gpu->GetCurrentInFlightFence(), VK_TRUE, UINT64_MAX);
 
     VkResult result = _gpu->Swapchain.GetNextImage();
 
@@ -98,7 +98,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
 
-    vkResetFences(_gpu->Device, 1, &_gpu->GetCurrentInFlightFence());
+    vkResetFences(_gpu->_device, 1, &_gpu->GetCurrentInFlightFence());
 
     _gpu->Commands.ResetBuffer();
     const VkCommandBuffer& currentBuffer = _gpu->Commands.GetBuffer();
@@ -120,7 +120,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(_gpu->GraphicsQueue, 1, &submitInfo, _gpu->GetCurrentInFlightFence()) != VK_SUCCESS)
+    if (vkQueueSubmit(_gpu->_graphicsQueue, 1, &submitInfo, _gpu->GetCurrentInFlightFence()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to submit draw command buffer!");
     }
@@ -131,13 +131,13 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapChains[] = {_gpu->Swapchain.GetSwapchain()};
+    VkSwapchainKHR swapChains[] = {_gpu->Swapchain._swapchain};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
 
-    presentInfo.pImageIndices = &_gpu->Swapchain.GetCurrentImageIndex();
+    presentInfo.pImageIndices = &_gpu->Swapchain._currentImageIndex;
 
-    result = vkQueuePresentKHR(_gpu->PresentQueue, &presentInfo);
+    result = vkQueuePresentKHR(_gpu->_presentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _framebufferResized)
     {

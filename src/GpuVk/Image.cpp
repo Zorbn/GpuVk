@@ -32,7 +32,7 @@ Image::Image(std::shared_ptr<Gpu> gpu, uint32_t width, uint32_t height, VkFormat
     VkImage image;
     VmaAllocation allocation;
 
-    if (vmaCreateImage(_gpu->Allocator, &imageInfo, &aci, &image, &allocation, nullptr) != VK_SUCCESS)
+    if (vmaCreateImage(_gpu->_allocator, &imageInfo, &aci, &image, &allocation, nullptr) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate image memory!");
     }
@@ -72,14 +72,14 @@ Image::~Image()
     if (!_gpu)
         return;
 
-    vkDestroyImageView(_gpu->Device, _view, nullptr);
+    vkDestroyImageView(_gpu->_device, _view, nullptr);
 
     // Some images don't have an allocation, ie: because they were acquired
     // from the swapchain rather than allocated manually by us.
     if (!_allocation)
         return;
 
-    vmaDestroyImage(_gpu->Allocator, _image, _allocation);
+    vmaDestroyImage(_gpu->_allocator, _image, _allocation);
 }
 
 void Image::GenerateMipmaps()
@@ -229,7 +229,7 @@ void Image::CreateView(VkImageAspectFlags aspectFlags)
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = _layerCount;
 
-    if (vkCreateImageView(_gpu->Device, &viewInfo, nullptr, &_view) != VK_SUCCESS)
+    if (vkCreateImageView(_gpu->_device, &viewInfo, nullptr, &_view) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create texture image view!");
     }
@@ -324,7 +324,7 @@ void Image::CopyFromBuffer(Buffer& src, uint32_t fullWidth, uint32_t fullHeight)
         regions.push_back(region);
     }
 
-    vkCmdCopyBufferToImage(commandBuffer, src.GetBuffer(), _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    vkCmdCopyBufferToImage(commandBuffer, src._buffer, _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         static_cast<uint32_t>(regions.size()), regions.data());
 
     _gpu->Commands.EndSingleTime(commandBuffer);
@@ -348,9 +348,4 @@ uint32_t Image::GetHeight() const
 uint32_t Image::GetMipmapLevels() const
 {
     return _mipmapLevels;
-}
-
-VkImageView Image::GetView() const
-{
-    return _view;
 }

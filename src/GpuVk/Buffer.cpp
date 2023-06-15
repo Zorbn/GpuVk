@@ -19,7 +19,7 @@ Buffer::Buffer(std::shared_ptr<Gpu> gpu, uint64_t byteSize, VkBufferUsageFlags u
     }
 
     if (byteSize != 0 &&
-        vmaCreateBuffer(gpu->Allocator, &bufferInfo, &allocCreateInfo, &_buffer, &_allocation, &_allocationInfo) != VK_SUCCESS)
+        vmaCreateBuffer(gpu->_allocator, &bufferInfo, &allocCreateInfo, &_buffer, &_allocation, &_allocationInfo) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create buffer!");
     }
@@ -47,7 +47,7 @@ Buffer::~Buffer()
     if (_byteSize == 0)
         return;
 
-    vmaDestroyBuffer(_gpu->Allocator, _buffer, _allocation);
+    vmaDestroyBuffer(_gpu->_allocator, _buffer, _allocation);
 }
 
 void Buffer::CopyTo(Buffer& dst)
@@ -64,11 +64,6 @@ void Buffer::CopyTo(Buffer& dst)
     _gpu->Commands.EndSingleTime(commandBuffer);
 }
 
-const VkBuffer& Buffer::GetBuffer() const
-{
-    return _buffer;
-}
-
 size_t Buffer::GetSize() const
 {
     return _byteSize;
@@ -79,7 +74,7 @@ void Buffer::Map(void** data)
     if (_byteSize == 0)
         return;
 
-    vmaMapMemory(_gpu->Allocator, _allocation, data);
+    vmaMapMemory(_gpu->_allocator, _allocation, data);
 }
 
 void Buffer::Unmap()
@@ -87,7 +82,7 @@ void Buffer::Unmap()
     if (_byteSize == 0)
         return;
 
-    vmaUnmapMemory(_gpu->Allocator, _allocation);
+    vmaUnmapMemory(_gpu->_allocator, _allocation);
 }
 
 void Buffer::SetData(const void* data)

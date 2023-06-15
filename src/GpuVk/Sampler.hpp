@@ -16,6 +16,8 @@ class Sampler
     ~Sampler();
 
     private:
+    static VkFilter GetVkFilter(FilterMode filterMode);
+
     std::shared_ptr<Gpu> _gpu;
 
     VkSampler _sampler;

@@ -11,4 +11,3 @@ enum class Format
 };
 
 // TODO: Use namespaces for all GpuVk files, so that names like this don't conflict with anything else.
-VkFormat GetVkFormat(Format format);

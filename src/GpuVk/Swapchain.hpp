@@ -24,18 +24,7 @@ class Swapchain
 {
     friend class Gpu;
     friend class RenderEngine;
-
-    public:
-    VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-    VkPresentModeKHR ChoosePresentMode(
-        const std::vector<VkPresentModeKHR>& availablePresentModes, VkPresentModeKHR preferredPresentMode);
-    VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, int32_t windowWidth, int32_t windowHeight);
-    VkResult GetNextImage();
-
-    const VkSwapchainKHR& GetSwapchain() const;
-    const VkExtent2D& GetExtent() const;
-    const VkFormat& GetImageFormat() const;
-    const uint32_t& GetCurrentImageIndex() const;
+    friend class RenderPass;
 
     private:
     Swapchain() = default;
@@ -48,6 +37,13 @@ class Swapchain
     void Create(int32_t windowWidth, int32_t windowHeight);
     void Destroy();
     void Resize(int32_t windowWidth, int32_t windowHeight);
+
+    VkResult GetNextImage();
+
+    static VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    static VkPresentModeKHR ChoosePresentMode(
+        const std::vector<VkPresentModeKHR>& availablePresentModes, VkPresentModeKHR preferredPresentMode);
+    static VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, int32_t windowWidth, int32_t windowHeight);
 
     static SwapchainSupportDetails QuerySupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 

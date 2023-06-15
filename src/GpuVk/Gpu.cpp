@@ -76,7 +76,7 @@ void Gpu::CreateInstance(SDL_Window* window)
         createInfo.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&createInfo, nullptr, &Instance) != VK_SUCCESS)
+    if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS)
         throw std::runtime_error("Failed to create instance!");
 }
 
@@ -89,12 +89,12 @@ void Gpu::CreateAllocator()
 
     VmaAllocatorCreateInfo aci = {};
     aci.vulkanApiVersion = VK_API_VERSION_1_2;
-    aci.physicalDevice = PhysicalDevice;
-    aci.device = Device;
-    aci.instance = Instance;
+    aci.physicalDevice = _physicalDevice;
+    aci.device = _device;
+    aci.instance = _instance;
     aci.pVulkanFunctions = &vkFuncs;
 
-    vmaCreateAllocator(&aci, &Allocator);
+    vmaCreateAllocator(&aci, &_allocator);
 }
 
 void Gpu::CreateSyncObjects()
@@ -112,11 +112,11 @@ void Gpu::CreateSyncObjects()
 
     for (size_t i = 0; i < MaxFramesInFlight; i++)
     {
-        if (vkCreateSemaphore(Device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) !=
+        if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) !=
                 VK_SUCCESS ||
-            vkCreateSemaphore(Device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) !=
+            vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) !=
                 VK_SUCCESS ||
-            vkCreateFence(Device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS)
+            vkCreateFence(_device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
@@ -131,7 +131,7 @@ void Gpu::SetupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     PopulateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(Instance, &createInfo, nullptr, &DebugMessenger) != VK_SUCCESS)
+    if (CreateDebugUtilsMessengerEXT(_instance, &createInfo, nullptr, &_debugMessenger) != VK_SUCCESS)
         throw std::runtime_error("Failed to set up debug messenger!");
 }
 
@@ -206,31 +206,32 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Gpu::DebugCallback(VkDebugUtilsMessageSeverityFla
 
 void Gpu::Cleanup()
 {
-    vmaDestroyAllocator(Allocator);
+    vmaDestroyAllocator(_allocator);
 
     for (size_t i = 0; i < MaxFramesInFlight; i++)
     {
-        vkDestroySemaphore(Device, _renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(Device, _imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(Device, _inFlightFences[i], nullptr);
+        vkDestroySemaphore(_device, _renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(_device, _imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(_device, _inFlightFences[i], nullptr);
     }
 
     // Commands need to be destroyed before the device.
     Commands.~Commands();
 
-    vkDestroyDevice(Device, nullptr);
+    vkDestroyDevice(_device, nullptr);
 
     if (EnableValidationLayers)
-        DestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+        DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
 
-    vkDestroySurfaceKHR(Instance, Surface, nullptr);
-    vkDestroyInstance(Instance, nullptr);
+    vkDestroySurfaceKHR(_instance, _surface, nullptr);
+    vkDestroyInstance(_instance, nullptr);
 }
 
 void Gpu::IncrementFrame()
 {
     _currentFrame = (_currentFrame + 1) % MaxFramesInFlight;
-    Commands.SetCurrentBufferIndex(_currentFrame);
+    Commands._currentBufferIndex = _currentFrame;
+    Swapchain._currentImageIndex = _currentFrame;
 }
 
 VkSemaphore Gpu::GetCurrentImageAvailableSemaphore() const
@@ -250,41 +251,41 @@ const VkFence& Gpu::GetCurrentInFlightFence() const
 
 void Gpu::CreateSurface(SDL_Window* window)
 {
-    if (!SDL_Vulkan_CreateSurface(window, Instance, &Surface))
+    if (!SDL_Vulkan_CreateSurface(window, _instance, &_surface))
         throw std::runtime_error("Failed to create window surface!");
 }
 
 void Gpu::PickPhysicalDevice()
 {
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(Instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
 
     if (deviceCount == 0)
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(Instance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
 
     for (const auto& device : devices)
     {
         if (IsDeviceSuitable(device))
         {
-            PhysicalDevice = device;
+            _physicalDevice = device;
             break;
         }
     }
 
-    if (PhysicalDevice == VK_NULL_HANDLE)
+    if (_physicalDevice == VK_NULL_HANDLE)
         throw std::runtime_error("Failed to find a suitable GPU!");
 }
 
 void Gpu::CreateLogicalDevice()
 {
     QueueFamilyIndices indices =
-        QueueFamilyIndices::FindQueueFamilies(PhysicalDevice, Surface);
+        QueueFamilyIndices::FindQueueFamilies(_physicalDevice, _surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.GraphicsFamily.value(), indices.PresentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {indices._graphicsFamily.value(), indices._presentFamily.value()};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -322,17 +323,17 @@ void Gpu::CreateLogicalDevice()
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(PhysicalDevice, &createInfo, nullptr, &Device) !=
+    if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) !=
         VK_SUCCESS)
         throw std::runtime_error("Failed to create logical device!");
 
-    vkGetDeviceQueue(Device, indices.GraphicsFamily.value(), 0, &GraphicsQueue);
-    vkGetDeviceQueue(Device, indices.PresentFamily.value(), 0, &PresentQueue);
+    vkGetDeviceQueue(_device, indices._graphicsFamily.value(), 0, &_graphicsQueue);
+    vkGetDeviceQueue(_device, indices._presentFamily.value(), 0, &_presentQueue);
 }
 
 bool Gpu::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(physicalDevice, Surface);
+    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(physicalDevice, _surface);
 
     bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice);
 
@@ -340,7 +341,7 @@ bool Gpu::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
     if (extensionsSupported)
     {
         SwapchainSupportDetails swapchainSupport =
-            Swapchain::QuerySupport(physicalDevice, Surface);
+            Swapchain::QuerySupport(physicalDevice, _surface);
         swapChainAdequate = !swapchainSupport.Formats.empty() && !swapchainSupport.PresentModes.empty();
     }
 

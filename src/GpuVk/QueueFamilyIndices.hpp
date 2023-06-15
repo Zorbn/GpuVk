@@ -2,14 +2,19 @@
 
 #include <optional>
 
-struct QueueFamilyIndices
+class QueueFamilyIndices
 {
-    std::optional<uint32_t> GraphicsFamily;
-    std::optional<uint32_t> PresentFamily;
+    friend class Commands;
+    friend class Gpu;
+    friend class Swapchain;
+
+    private:
+    std::optional<uint32_t> _graphicsFamily;
+    std::optional<uint32_t> _presentFamily;
 
     bool IsComplete()
     {
-        return GraphicsFamily.has_value() && PresentFamily.has_value();
+        return _graphicsFamily.has_value() && _presentFamily.has_value();
     }
 
     static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
@@ -26,13 +31,13 @@ struct QueueFamilyIndices
         for (const auto& queueFamily : queueFamilies)
         {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-                indices.GraphicsFamily = i;
+                indices._graphicsFamily = i;
 
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
 
             if (presentSupport)
-                indices.PresentFamily = i;
+                indices._presentFamily = i;
             if (indices.IsComplete())
                 break;
 

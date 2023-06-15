@@ -1,4 +1,5 @@
 #include "Pipeline.hpp"
+#include "File.hpp"
 
 Pipeline::Pipeline(std::shared_ptr<Gpu> gpu, const PipelineOptions& pipelineOptions, const RenderPass& renderPass) : _gpu(gpu)
 {
@@ -32,10 +33,10 @@ Pipeline::~Pipeline()
     if (!_gpu)
         return;
 
-    vkDestroyPipeline(_gpu->Device, _pipeline, nullptr);
-    vkDestroyPipelineLayout(_gpu->Device, _pipelineLayout, nullptr);
-    vkDestroyDescriptorPool(_gpu->Device, _descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(_gpu->Device, _descriptorSetLayout, nullptr);
+    vkDestroyPipeline(_gpu->_device, _pipeline, nullptr);
+    vkDestroyPipelineLayout(_gpu->_device, _pipelineLayout, nullptr);
+    vkDestroyDescriptorPool(_gpu->_device, _descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(_gpu->_device, _descriptorSetLayout, nullptr);
 }
 
 void Pipeline::UpdateImage(uint32_t binding, const Image& image, const Sampler& sampler)
@@ -44,7 +45,7 @@ void Pipeline::UpdateImage(uint32_t binding, const Image& image, const Sampler& 
     {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = image.GetView();
+        imageInfo.imageView = image._view;
         imageInfo.sampler = sampler._sampler;
 
         VkWriteDescriptorSet descriptorWrite{};
@@ -56,7 +57,7 @@ void Pipeline::UpdateImage(uint32_t binding, const Image& image, const Sampler& 
         descriptorWrite.descriptorCount = 1;
         descriptorWrite.pImageInfo = &imageInfo;
 
-        vkUpdateDescriptorSets(_gpu->Device, 1, &descriptorWrite, 0, nullptr);
+        vkUpdateDescriptorSets(_gpu->_device, 1, &descriptorWrite, 0, nullptr);
     }
 }
 
@@ -107,7 +108,7 @@ void Pipeline::CreateDescriptorSetLayout()
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
     layoutInfo.pBindings = bindings.data();
 
-    if (vkCreateDescriptorSetLayout(_gpu->Device, &layoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(_gpu->_device, &layoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor set layout!");
     }
@@ -131,7 +132,7 @@ void Pipeline::CreateDescriptorPool()
     poolInfo.pPoolSizes = poolSizes.data();
     poolInfo.maxSets = static_cast<uint32_t>(MaxFramesInFlight);
 
-    if (vkCreateDescriptorPool(_gpu->Device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
+    if (vkCreateDescriptorPool(_gpu->_device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create descriptor pool!");
     }
@@ -147,7 +148,7 @@ void Pipeline::CreateDescriptorSets()
     allocInfo.pSetLayouts = layouts.data();
 
     _descriptorSets.resize(MaxFramesInFlight);
-    if (vkAllocateDescriptorSets(_gpu->Device, &allocInfo, _descriptorSets.data()) != VK_SUCCESS)
+    if (vkAllocateDescriptorSets(_gpu->_device, &allocInfo, _descriptorSets.data()) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to allocate descriptor sets!");
     }
@@ -200,8 +201,8 @@ void Pipeline::Create(const PipelineOptions& pipelineOptions, const RenderPass& 
     auto vertShaderCode = ReadFile(pipelineOptions.VertexShader);
     auto fragShaderCode = ReadFile(pipelineOptions.FragmentShader);
 
-    VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode, _gpu->Device);
-    VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode, _gpu->Device);
+    VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode, _gpu->_device);
+    VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode, _gpu->_device);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -258,7 +259,7 @@ void Pipeline::Create(const PipelineOptions& pipelineOptions, const RenderPass& 
     {
         multisampling.sampleShadingEnable = VK_TRUE;
         multisampling.minSampleShading = 0.2f;
-        multisampling.rasterizationSamples = renderPass.GetMsaaSamples();
+        multisampling.rasterizationSamples = renderPass._msaaSampleCount;
     }
     else
     {
@@ -315,7 +316,7 @@ void Pipeline::Create(const PipelineOptions& pipelineOptions, const RenderPass& 
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
 
-    if (vkCreatePipelineLayout(_gpu->Device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(_gpu->_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create pipeline layout!");
     }
@@ -343,22 +344,22 @@ void Pipeline::Create(const PipelineOptions& pipelineOptions, const RenderPass& 
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = _pipelineLayout;
-    pipelineInfo.renderPass = renderPass.GetRenderPass();
+    pipelineInfo.renderPass = renderPass._renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(_gpu->Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(_gpu->_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(_gpu->Device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(_gpu->Device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(_gpu->_device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(_gpu->_device, vertShaderModule, nullptr);
 }
 
 void Pipeline::Bind()
 {
-    auto currentBufferIndex = _gpu->Commands.GetCurrentBufferIndex();
+    auto currentBufferIndex = _gpu->Commands._currentBufferIndex;
     vkCmdBindDescriptorSets(_gpu->Commands.GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1,
         &_descriptorSets[currentBufferIndex], 0, nullptr);
     vkCmdBindPipeline(_gpu->Commands.GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
@@ -380,22 +381,25 @@ VkShaderModule Pipeline::CreateShaderModule(const std::vector<char>& code, VkDev
     return shaderModule;
 }
 
-std::vector<char> Pipeline::ReadFile(const std::string& filename)
+VkFormat Pipeline::GetVkFormat(Format format)
 {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+    VkFormat vkFormat;
 
-    if (!file.is_open())
+    switch (format)
     {
-        throw std::runtime_error("Failed to open file!");
+        case Format::Float:
+            vkFormat = VK_FORMAT_R32_SFLOAT;
+            break;
+        case Format::Float2:
+            vkFormat = VK_FORMAT_R32G32_SFLOAT;
+            break;
+        case Format::Float3:
+            vkFormat = VK_FORMAT_R32G32B32_SFLOAT;
+            break;
+        case Format::Float4:
+            vkFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+            break;
     }
 
-    size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
+    return vkFormat;
 }

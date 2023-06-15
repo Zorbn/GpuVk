@@ -15,6 +15,7 @@ class Buffer;
 class Image
 {
     friend class RenderPass;
+    friend class Pipeline;
 
     public:
     static Image CreateTexture(std::shared_ptr<Gpu> gpu, const std::string& image, bool enableMipmaps);
@@ -29,9 +30,6 @@ class Image
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
     uint32_t GetMipmapLevels() const;
-    // TODO: Should these types of getters be removed, and instead just friend the class that needs them,
-    // so that references to Vk objects can be removed from the public API?
-    VkImageView GetView() const;
 
     private:
     Image(std::shared_ptr<Gpu> gpu, VkImage image, VkFormat format, VkImageAspectFlags viewAspectFlags);

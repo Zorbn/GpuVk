@@ -43,7 +43,7 @@ class Pipeline
             descriptorWrite.descriptorCount = 1;
             descriptorWrite.pBufferInfo = &bufferInfo;
 
-            vkUpdateDescriptorSets(_gpu->Device, 1, &descriptorWrite, 0, nullptr);
+            vkUpdateDescriptorSets(_gpu->_device, 1, &descriptorWrite, 0, nullptr);
         }
     }
 
@@ -61,7 +61,7 @@ class Pipeline
     void Create(const PipelineOptions& pipelineOptions, const RenderPass& renderPass);
 
     static VkShaderModule CreateShaderModule(const std::vector<char>& code, VkDevice device);
-    static std::vector<char> ReadFile(const std::string& filename); // TODO: Move this somewhere else.
+    static VkFormat GetVkFormat(Format format);
 
     std::shared_ptr<Gpu> _gpu;
 

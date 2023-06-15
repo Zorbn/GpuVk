@@ -258,33 +258,33 @@ class App : public IRenderer
         (void)window;
 
         gpu.Swapchain.Create(
-            gpu.Device, gpu.PhysicalDevice, gpu.Surface, width, height);
+            gpu._device, gpu._physicalDevice, gpu._surface, width, height);
 
         gpu.Commands.CreatePool(
-            gpu.PhysicalDevice, gpu.Device, gpu.Surface);
-        gpu.Commands.CreateBuffers(gpu.Device);
+            gpu._physicalDevice, gpu._device, gpu._surface);
+        gpu.Commands.CreateBuffers(gpu._device);
 
-        _textureImage = Image::CreateTextureArray("res/cubesImg.png", gpu.Allocator, gpu.Commands,
-            gpu.GraphicsQueue, gpu.Device, true, 16, 16, 4);
-        _textureImageView = _textureImage.CreateTextureView(gpu.Device);
+        _textureImage = Image::CreateTextureArray("res/cubesImg.png", gpu._allocator, gpu.Commands,
+            gpu._graphicsQueue, gpu._device, true, 16, 16, 4);
+        _textureImageView = _textureImage.CreateTextureView(gpu._device);
         _textureSampler = _textureImage.CreateTextureSampler(
-            gpu.PhysicalDevice, gpu.Device, VK_FILTER_NEAREST, VK_FILTER_NEAREST);
+            gpu._physicalDevice, gpu._device, VK_FILTER_NEAREST, VK_FILTER_NEAREST);
 
         GenerateVoxelMesh();
         _voxelModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(_voxelVertices, _voxelIndices,
-            1, gpu.Allocator, gpu.Commands, gpu.GraphicsQueue,
-            gpu.Device);
+            1, gpu._allocator, gpu.Commands, gpu._graphicsQueue,
+            gpu._device);
         std::vector<InstanceData> instances = {InstanceData{}};
-        _voxelModel.UpdateInstances(instances, gpu.Commands, gpu.Allocator,
-            gpu.GraphicsQueue, gpu.Device);
+        _voxelModel.UpdateInstances(instances, gpu.Commands, gpu._allocator,
+            gpu._graphicsQueue, gpu._device);
 
         const VkExtent2D& extent = gpu.Swapchain.GetExtent();
-        _ubo.Create(gpu.Allocator);
+        _ubo.Create(gpu._allocator);
 
-        _renderPass.Create(gpu.PhysicalDevice, gpu.Device, gpu.Allocator,
+        _renderPass.Create(gpu._physicalDevice, gpu._device, gpu._allocator,
             gpu.Swapchain, true, false);
 
-        _pipeline.CreateDescriptorSetLayout(gpu.Device,
+        _pipeline.CreateDescriptorSetLayout(gpu._device,
             [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
             {
                 VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -304,7 +304,7 @@ class App : public IRenderer
                 bindings.push_back(uboLayoutBinding);
                 bindings.push_back(samplerLayoutBinding);
             });
-        _pipeline.CreateDescriptorPool(gpu.Device,
+        _pipeline.CreateDescriptorPool(gpu._device,
             [&](std::vector<VkDescriptorPoolSize> poolSizes)
             {
                 poolSizes.resize(2);
@@ -314,7 +314,7 @@ class App : public IRenderer
                 poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 poolSizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
             });
-        _pipeline.CreateDescriptorSets(gpu.Device,
+        _pipeline.CreateDescriptorSets(gpu._device,
             [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
             {
                 VkDescriptorBufferInfo bufferInfo{};
@@ -345,11 +345,11 @@ class App : public IRenderer
                 descriptorWrites[1].descriptorCount = 1;
                 descriptorWrites[1].pImageInfo = &imageInfo;
 
-                vkUpdateDescriptorSets(gpu.Device, static_cast<uint32_t>(descriptorWrites.size()),
+                vkUpdateDescriptorSets(gpu._device, static_cast<uint32_t>(descriptorWrites.size()),
                     descriptorWrites.data(), 0, nullptr);
             });
         _pipeline.Create<VertexData, InstanceData>(
-            "res/cubesShader.vert.spv", "res/cubesShader.frag.spv", gpu.Device, _renderPass, false);
+            "res/cubesShader.vert.spv", "res/cubesShader.frag.spv", gpu._device, _renderPass, false);
 
         _clearValues.resize(2);
         _clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -389,21 +389,21 @@ class App : public IRenderer
     {
         (void)width, (void)height;
 
-        _renderPass.Recreate(gpu.Device, gpu.Swapchain);
+        _renderPass.Recreate(gpu._device, gpu.Swapchain);
     }
 
     void Cleanup(Gpu& gpu)
     {
-        _pipeline.Cleanup(gpu.Device);
-        _renderPass.Cleanup(gpu.Device);
+        _pipeline.Cleanup(gpu._device);
+        _renderPass.Cleanup(gpu._device);
 
-        _ubo.Destroy(gpu.Allocator);
+        _ubo.Destroy(gpu._allocator);
 
-        vkDestroySampler(gpu.Device, _textureSampler, nullptr);
-        vkDestroyImageView(gpu.Device, _textureImageView, nullptr);
-        _textureImage.Destroy(gpu.Allocator);
+        vkDestroySampler(gpu._device, _textureSampler, nullptr);
+        vkDestroyImageView(gpu._device, _textureImageView, nullptr);
+        _textureImage.Destroy(gpu._allocator);
 
-        _voxelModel.Destroy(gpu.Allocator);
+        _voxelModel.Destroy(gpu._allocator);
     }
 };
 

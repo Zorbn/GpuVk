@@ -5,8 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include <vector>
 #include <set>
+#include <vector>
 
 #include "Commands.hpp"
 #include "Swapchain.hpp"
@@ -18,24 +18,23 @@ void DestroyDebugUtilsMessengerEXT(
 
 class Gpu
 {
+    // Classes use Vulkan specific APIs internally, but expose independent APIs.
+    // Some of these classes friend each other in order to access Vulkan specific
+    // APIs without exposing them to the user.
     friend class RenderEngine;
+    friend class RenderPass;
     friend class Swapchain;
+    friend class Commands;
+    friend class Sampler;
+    friend class Swapchain;
+    friend class Image;
+    friend class Pipeline;
+    friend class Buffer;
+    template <typename V, typename I, typename D> friend class Model;
 
     public:
-    // TODO: Create everything in Gpu for the user, so they don't have to:
     Swapchain Swapchain;
     Commands Commands;
-
-    // TODO: Remove the Vulkan (Vk/Vma) specific fields from the public API. The external API should be agnostic of
-    // Vulkan.
-    VkPhysicalDevice PhysicalDevice;
-    VkDevice Device;
-    VkSurfaceKHR Surface;
-    VkQueue GraphicsQueue;
-    VmaAllocator Allocator;
-    VkInstance Instance;
-    VkDebugUtilsMessengerEXT DebugMessenger;
-    VkQueue PresentQueue;
 
     private:
     void Init(SDL_Window* window);
@@ -62,6 +61,15 @@ class Gpu
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData);
+
+    VkPhysicalDevice _physicalDevice;
+    VkDevice _device;
+    VkSurfaceKHR _surface;
+    VkQueue _graphicsQueue;
+    VmaAllocator _allocator;
+    VkInstance _instance;
+    VkDebugUtilsMessengerEXT _debugMessenger;
+    VkQueue _presentQueue;
 
     std::vector<VkSemaphore> _imageAvailableSemaphores;
     std::vector<VkSemaphore> _renderFinishedSemaphores;

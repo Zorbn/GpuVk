@@ -7,5 +7,3 @@ enum class FilterMode
     Linear,
     Nearest
 };
-
-VkFilter GetVkFilter(FilterMode filterMode);

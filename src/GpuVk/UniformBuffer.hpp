@@ -8,6 +8,8 @@
 
 template <typename T> class UniformBuffer
 {
+    friend class Pipeline;
+
     public:
     UniformBuffer() = default;
 
@@ -56,17 +58,17 @@ template <typename T> class UniformBuffer
         }
     }
 
-    const VkBuffer& GetBuffer(uint32_t i) const
-    {
-        return _buffers[i].GetBuffer();
-    }
-
     size_t GetDataSize() const
     {
         return sizeof(T);
     }
 
     private:
+    const VkBuffer& GetBuffer(uint32_t i) const
+    {
+        return _buffers[i]._buffer;
+    }
+
     std::vector<Buffer> _buffers;
     std::vector<void*> _buffersMapped;
 };

@@ -13,17 +13,15 @@ class Commands
 {
     friend class RenderEngine;
     friend class Gpu;
+    friend class Buffer;
+    friend class Image;
+    friend class Pipeline;
+    friend class RenderPass;
+    template <typename V, typename I, typename D> friend class Model;
 
     public:
-    VkCommandBuffer BeginSingleTime() const;
-    void EndSingleTime(VkCommandBuffer commandBuffer) const;
-
     void BeginBuffer();
     void EndBuffer();
-    const VkCommandBuffer& GetBuffer() const;
-
-    void SetCurrentBufferIndex(uint32_t currentBufferIndex);
-    uint32_t GetCurrentBufferIndex() const;
 
     private:
     Commands() = default;
@@ -35,6 +33,11 @@ class Commands
     void CreatePool();
     void CreateBuffers();
     void ResetBuffer();
+
+    const VkCommandBuffer& GetBuffer() const;
+
+    VkCommandBuffer BeginSingleTime() const;
+    void EndSingleTime(VkCommandBuffer commandBuffer) const;
 
     std::shared_ptr<Gpu> _gpu;
 
