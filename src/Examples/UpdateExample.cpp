@@ -66,7 +66,7 @@ class App : public IRenderer
     public:
     void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height)
     {
-        _textureImage = Image::CreateTexture(gpu, "res/updateImg.png", true);
+        _textureImage = Image::CreateTexture(gpu, "res/UpdateExample/updateImg.png", true);
         _textureSampler = Sampler(gpu, _textureImage);
 
         _spriteModel = Model<VertexData, uint16_t, InstanceData>::Create(gpu, 3);
@@ -110,8 +110,8 @@ class App : public IRenderer
         });
 
         PipelineOptions pipelineOptions{};
-        pipelineOptions.VertexShader = "res/updateShader.vert.spv";
-        pipelineOptions.FragmentShader = "res/updateShader.frag.spv";
+        pipelineOptions.VertexShader = "res/UpdateExample/updateShader.vert.spv";
+        pipelineOptions.FragmentShader = "res/UpdateExample/updateShader.frag.spv";
         pipelineOptions.EnableTransparency = false;
         pipelineOptions.VertexDataOptions = vertexDataOptions;
         pipelineOptions.InstanceDataOptions = instanceDataOptions;

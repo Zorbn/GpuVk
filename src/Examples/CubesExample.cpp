@@ -215,7 +215,7 @@ class App : public IRenderer
     public:
     void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height)
     {
-        _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
+        _textureImage = Image::CreateTextureArray(gpu, "res/CubesExample/cubesImg.png", true, 16, 16, 4);
         _textureSampler = Sampler(gpu, _textureImage, FilterMode::Nearest, FilterMode::Nearest);
 
         GenerateVoxelMesh();
@@ -226,7 +226,7 @@ class App : public IRenderer
         _ubo = UniformBuffer<UniformBufferData>(gpu);
         _uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         _uboData.View =
-            glm::lookAt(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+            glm::lookAt(glm::vec3(0.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         UpdateProjectionMatrix(width, height);
 
         RenderPassOptions renderPassOptions{};
@@ -257,8 +257,8 @@ class App : public IRenderer
         instanceDataOptions.Size = sizeof(InstanceData);
 
         PipelineOptions pipelineOptions{};
-        pipelineOptions.VertexShader = "res/cubesShader.vert.spv";
-        pipelineOptions.FragmentShader = "res/cubesShader.frag.spv";
+        pipelineOptions.VertexShader = "res/CubesExample/cubesShader.vert.spv";
+        pipelineOptions.FragmentShader = "res/CubesExample/cubesShader.frag.spv";
         pipelineOptions.EnableTransparency = false;
         pipelineOptions.VertexDataOptions = vertexDataOptions;
         pipelineOptions.InstanceDataOptions = instanceDataOptions;

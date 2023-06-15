@@ -124,7 +124,7 @@ class App : public IRenderer
             glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         UpdateProjectionMatrix(width, height);
 
-        _spriteBatch.Init(gpu, "res/cubesImg.png", 30);
+        _spriteBatch.Init(gpu, "res/CubesExample/cubesImg.png", 30);
 
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
@@ -174,8 +174,8 @@ class App : public IRenderer
         });
 
         PipelineOptions pipelineOptions{};
-        pipelineOptions.VertexShader = "res/2dShader.vert.spv";
-        pipelineOptions.FragmentShader = "res/2dShader.frag.spv";
+        pipelineOptions.VertexShader = "res/2dExample/2dShader.vert.spv";
+        pipelineOptions.FragmentShader = "res/2dExample/2dShader.frag.spv";
         pipelineOptions.EnableTransparency = false;
         pipelineOptions.VertexDataOptions = vertexDataOptions;
         pipelineOptions.InstanceDataOptions = instanceDataOptions;

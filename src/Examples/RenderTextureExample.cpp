@@ -147,7 +147,6 @@ const std::array<std::array<int32_t, 3>, 6> Directions = {{
 class App : public IRenderer
 {
     private:
-    // TODO: Give these more helpful names than _ and final_.
     Pipeline _offscreenPipeline;
     Pipeline _pipeline;
     RenderPass _offscreenRenderPass;
@@ -271,8 +270,8 @@ class App : public IRenderer
         });
 
         PipelineOptions finalPipelineOptions{};
-        finalPipelineOptions.VertexShader = "res/renderTextureFinalShader.vert.spv";
-        finalPipelineOptions.FragmentShader = "res/renderTextureFinalShader.frag.spv";
+        finalPipelineOptions.VertexShader = "res/RenderTextureExample/renderTextureShader.vert.spv";
+        finalPipelineOptions.FragmentShader = "res/RenderTextureExample/renderTextureShader.frag.spv";
         finalPipelineOptions.EnableTransparency = false;
         finalPipelineOptions.VertexDataOptions = vertexDataOptions;
         finalPipelineOptions.InstanceDataOptions = instanceDataOptions;
@@ -291,8 +290,8 @@ class App : public IRenderer
         _pipeline.UpdateImage(1, _offscreenRenderPass.GetColorImage(), _colorSampler);
 
         PipelineOptions pipelineOptions{};
-        pipelineOptions.VertexShader = "res/renderTextureShader.vert.spv";
-        pipelineOptions.FragmentShader = "res/renderTextureShader.frag.spv";
+        pipelineOptions.VertexShader = "res/RenderTextureExample/offscreenRenderTextureShader.vert.spv";
+        pipelineOptions.FragmentShader = "res/RenderTextureExample/offscreenRenderTextureShader.frag.spv";
         pipelineOptions.EnableTransparency = false;
         pipelineOptions.VertexDataOptions = vertexDataOptions;
         pipelineOptions.InstanceDataOptions = instanceDataOptions;
