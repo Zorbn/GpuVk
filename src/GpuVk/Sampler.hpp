@@ -1,8 +1,10 @@
 #pragma once
 
-#include "Image.hpp"
 #include "FilterMode.hpp"
+#include "Image.hpp"
 
+namespace GpuVk
+{
 class Sampler
 {
     friend class Pipeline;
@@ -22,3 +24,4 @@ class Sampler
 
     VkSampler _sampler;
 };
+} // namespace GpuVk

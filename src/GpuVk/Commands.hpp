@@ -2,11 +2,13 @@
 
 #include <vulkan/vulkan.h>
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "QueueFamilyIndices.hpp"
 
+namespace GpuVk
+{
 class Gpu;
 
 class Commands
@@ -45,3 +47,4 @@ class Commands
     std::vector<VkCommandBuffer> _buffers;
     uint32_t _currentBufferIndex = 0;
 };
+} // namespace GpuVk

@@ -8,14 +8,16 @@
 #include <iostream>
 #include <vector>
 
-#include "Gpu.hpp"
-#include "RenderPass.hpp"
-#include "Swapchain.hpp"
 #include "Constants.hpp"
-#include "UniformBuffer.hpp"
+#include "Gpu.hpp"
 #include "PipelineOptions.hpp"
+#include "RenderPass.hpp"
 #include "Sampler.hpp"
+#include "Swapchain.hpp"
+#include "UniformBuffer.hpp"
 
+namespace GpuVk
+{
 class Pipeline
 {
     public:
@@ -56,8 +58,10 @@ class Pipeline
     void CreateDescriptorSetLayout();
     void CreateDescriptorPool();
     void CreateDescriptorSets();
-    std::array<VkVertexInputBindingDescription, 2> CreateVertexInputBindingDescriptions(const PipelineOptions& pipelineOptions);
-    std::vector<VkVertexInputAttributeDescription> CreateVertexInputAttributeDescriptions(const VertexOptions& vertexOptions);
+    std::array<VkVertexInputBindingDescription, 2> CreateVertexInputBindingDescriptions(
+        const PipelineOptions& pipelineOptions);
+    std::vector<VkVertexInputAttributeDescription> CreateVertexInputAttributeDescriptions(
+        const VertexOptions& vertexOptions);
     void Create(const PipelineOptions& pipelineOptions, const RenderPass& renderPass);
 
     static VkShaderModule CreateShaderModule(const std::vector<char>& code, VkDevice device);
@@ -75,3 +79,4 @@ class Pipeline
 
     bool _enableTransparency = false;
 };
+} // namespace GpuVk

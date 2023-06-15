@@ -7,10 +7,12 @@
 #include <functional>
 #include <vector>
 
-#include "Image.hpp"
 #include "Gpu.hpp"
+#include "Image.hpp"
 #include "RenderPassOptions.hpp"
 
+namespace GpuVk
+{
 class RenderPass
 {
     friend class Pipeline;
@@ -38,8 +40,8 @@ class RenderPass
     void CreateColorResources();
     void CleanupResources();
 
-    VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
-        VkImageTiling tiling, VkFormatFeatureFlags features);
+    VkFormat FindSupportedFormat(
+        const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat FindDepthFormat();
 
     const VkSampleCountFlagBits GetMaxUsableSampleCount(VkPhysicalDevice physicalDevice);
@@ -58,3 +60,4 @@ class RenderPass
     VkFormat _imageFormat;
     VkSampleCountFlagBits _msaaSampleCount = VK_SAMPLE_COUNT_1_BIT;
 };
+} // namespace GpuVk

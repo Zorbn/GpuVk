@@ -5,6 +5,8 @@
 #include <cassert>
 #include <stdexcept>
 
+namespace GpuVk
+{
 Commands::Commands(std::shared_ptr<Gpu> gpu) : _gpu(gpu)
 {
     CreatePool();
@@ -37,7 +39,8 @@ Commands::~Commands()
 
 void Commands::CreatePool()
 {
-    QueueFamilyIndices queueFamilyIndices = QueueFamilyIndices::FindQueueFamilies(_gpu->_physicalDevice, _gpu->_surface);
+    QueueFamilyIndices queueFamilyIndices =
+        QueueFamilyIndices::FindQueueFamilies(_gpu->_physicalDevice, _gpu->_surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -129,3 +132,4 @@ const VkCommandBuffer& Commands::GetBuffer() const
 {
     return _buffers[_currentBufferIndex];
 }
+} // namespace GpuVk

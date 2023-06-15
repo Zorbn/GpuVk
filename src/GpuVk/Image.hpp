@@ -7,6 +7,8 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
+namespace GpuVk
+{
 class Gpu;
 class Buffer;
 
@@ -40,7 +42,6 @@ class Image
     void GenerateMipmaps();
     void CreateView(VkImageAspectFlags aspectFlags);
 
-
     std::shared_ptr<Gpu> _gpu;
 
     VkImage _image;
@@ -55,3 +56,4 @@ class Image
     static Buffer LoadImage(std::shared_ptr<Gpu> gpu, const std::string& image, int32_t& width, int32_t& height);
     static uint32_t CalcMipmapLevels(int32_t texWidth, int32_t texHeight);
 };
+} // namespace GpuVk

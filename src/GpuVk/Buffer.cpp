@@ -1,6 +1,8 @@
 #include "Buffer.hpp"
 #include "Gpu.hpp"
 
+namespace GpuVk
+{
 Buffer::Buffer(std::shared_ptr<Gpu> gpu, uint64_t byteSize, VkBufferUsageFlags usage, bool cpuAccessible)
     : _gpu(gpu), _byteSize(byteSize)
 {
@@ -18,8 +20,8 @@ Buffer::Buffer(std::shared_ptr<Gpu> gpu, uint64_t byteSize, VkBufferUsageFlags u
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
     }
 
-    if (byteSize != 0 &&
-        vmaCreateBuffer(gpu->_allocator, &bufferInfo, &allocCreateInfo, &_buffer, &_allocation, &_allocationInfo) != VK_SUCCESS)
+    if (byteSize != 0 && vmaCreateBuffer(gpu->_allocator, &bufferInfo, &allocCreateInfo, &_buffer, &_allocation,
+                             &_allocationInfo) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create buffer!");
     }
@@ -92,3 +94,4 @@ void Buffer::SetData(const void* data)
 
     memcpy(_allocationInfo.pMappedData, data, _byteSize);
 }
+} // namespace GpuVk

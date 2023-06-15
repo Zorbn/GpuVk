@@ -1,5 +1,7 @@
 #include "RenderEngine.hpp"
 
+namespace GpuVk
+{
 void RenderEngine::InitWindow(const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
@@ -156,3 +158,4 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
 
     _gpu->IncrementFrame();
 }
+} // namespace GpuVk

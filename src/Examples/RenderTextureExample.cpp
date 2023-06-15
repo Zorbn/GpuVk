@@ -5,6 +5,8 @@
  * Uses multiple passes to draw to a model onto itself.
  */
 
+using namespace GpuVk;
+
 struct VertexData
 {
     glm::vec3 Pos;

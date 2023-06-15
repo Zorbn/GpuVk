@@ -2,6 +2,8 @@
 
 #include <cinttypes>
 
+namespace GpuVk
+{
 template <typename V, typename I, typename D> class Model
 {
     public:
@@ -83,3 +85,4 @@ template <typename V, typename I, typename D> class Model
     size_t _size = 0;
     size_t _instanceCount = 0;
 };
+} // namespace GpuVk

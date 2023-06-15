@@ -1,10 +1,11 @@
 #include "../GpuVk/RenderEngine.hpp"
-#include <thread>
 
 /*
  * 2d:
  * Render 2d sprites.
  */
+
+using namespace GpuVk;
 
 struct VertexData
 {

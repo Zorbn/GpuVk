@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+namespace GpuVk
+{
 const std::vector<const char*> ValidationLayers = {"VK_LAYER_KHRONOS_validation"};
 
 const std::vector<const char*> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -22,7 +24,8 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(
     VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
-    auto function = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto function =
+        (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 
     if (function)
         function(instance, debugMessenger, pAllocator);
@@ -112,10 +115,8 @@ void Gpu::CreateSyncObjects()
 
     for (size_t i = 0; i < MaxFramesInFlight; i++)
     {
-        if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) !=
-                VK_SUCCESS ||
-            vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) !=
-                VK_SUCCESS ||
+        if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(_device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
@@ -281,8 +282,7 @@ void Gpu::PickPhysicalDevice()
 
 void Gpu::CreateLogicalDevice()
 {
-    QueueFamilyIndices indices =
-        QueueFamilyIndices::FindQueueFamilies(_physicalDevice, _surface);
+    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(_physicalDevice, _surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices._graphicsFamily.value(), indices._presentFamily.value()};
@@ -323,8 +323,7 @@ void Gpu::CreateLogicalDevice()
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) !=
-        VK_SUCCESS)
+    if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) != VK_SUCCESS)
         throw std::runtime_error("Failed to create logical device!");
 
     vkGetDeviceQueue(_device, indices._graphicsFamily.value(), 0, &_graphicsQueue);
@@ -340,8 +339,7 @@ bool Gpu::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
     bool swapChainAdequate;
     if (extensionsSupported)
     {
-        SwapchainSupportDetails swapchainSupport =
-            Swapchain::QuerySupport(physicalDevice, _surface);
+        SwapchainSupportDetails swapchainSupport = Swapchain::QuerySupport(physicalDevice, _surface);
         swapChainAdequate = !swapchainSupport.Formats.empty() && !swapchainSupport.PresentModes.empty();
     }
 
@@ -366,3 +364,4 @@ bool Gpu::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 
     return requiredExtensions.empty();
 }
+} // namespace GpuVk

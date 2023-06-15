@@ -12,6 +12,8 @@
 #include "PresentMode.hpp"
 #include "QueueFamilyIndices.hpp"
 
+namespace GpuVk
+{
 class Gpu;
 
 struct SwapchainSupportDetails
@@ -61,3 +63,4 @@ class Swapchain
     VkFormat _imageFormat;
     uint32_t _currentImageIndex = 0;
 };
+} // namespace GpuVk

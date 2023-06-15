@@ -2,10 +2,12 @@
 
 #include <vk_mem_alloc.h>
 
+#include <memory>
 #include <stdexcept>
 #include <vector>
-#include <memory>
 
+namespace GpuVk
+{
 class Gpu;
 
 class Buffer
@@ -74,3 +76,4 @@ class Buffer
     VmaAllocationInfo _allocationInfo;
     size_t _byteSize = 0;
 };
+} // namespace GpuVk

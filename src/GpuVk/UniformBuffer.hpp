@@ -6,6 +6,8 @@
 #include "Buffer.hpp"
 #include "Constants.hpp"
 
+namespace GpuVk
+{
 template <typename T> class UniformBuffer
 {
     friend class Pipeline;
@@ -72,3 +74,4 @@ template <typename T> class UniformBuffer
     std::vector<Buffer> _buffers;
     std::vector<void*> _buffersMapped;
 };
+} // namespace GpuVk

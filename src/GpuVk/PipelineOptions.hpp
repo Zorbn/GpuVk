@@ -6,6 +6,8 @@
 
 #include "Format.hpp"
 
+namespace GpuVk
+{
 struct VertexAttribute
 {
     uint32_t Location;
@@ -48,3 +50,4 @@ struct PipelineOptions
     VertexOptions InstanceDataOptions;
     std::vector<DescriptorLayout> DescriptorLayouts;
 };
+}

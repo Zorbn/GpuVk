@@ -11,6 +11,8 @@
 #include "Commands.hpp"
 #include "Swapchain.hpp"
 
+namespace GpuVk
+{
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 void DestroyDebugUtilsMessengerEXT(
@@ -76,3 +78,4 @@ class Gpu
     std::vector<VkFence> _inFlightFences;
     uint32_t _currentFrame = 0;
 };
+} // namespace GpuVk

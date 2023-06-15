@@ -5,6 +5,8 @@
  * Generate a small voxel mesh. The cubes were a lie, there aren't really any cubes.
  */
 
+using namespace GpuVk;
+
 struct VertexData
 {
     glm::vec3 Pos;

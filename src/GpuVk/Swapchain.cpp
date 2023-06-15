@@ -1,6 +1,8 @@
 #include "Swapchain.hpp"
 #include "Gpu.hpp"
 
+namespace GpuVk
+{
 Swapchain::Swapchain(
     std::shared_ptr<Gpu> gpu, int32_t windowWidth, int32_t windowHeight, PresentMode preferredPresentMode)
     : _gpu(gpu), _preferredPresentMode(preferredPresentMode)
@@ -199,3 +201,4 @@ VkResult Swapchain::GetNextImage()
     return vkAcquireNextImageKHR(_gpu->_device, _swapchain, UINT64_MAX, _gpu->GetCurrentImageAvailableSemaphore(),
         VK_NULL_HANDLE, &_currentImageIndex);
 }
+} // namespace GpuVk

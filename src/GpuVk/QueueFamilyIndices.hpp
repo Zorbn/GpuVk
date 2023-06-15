@@ -2,6 +2,8 @@
 
 #include <optional>
 
+namespace GpuVk
+{
 class QueueFamilyIndices
 {
     friend class Commands;
@@ -47,3 +49,4 @@ class QueueFamilyIndices
         return indices;
     }
 };
+} // namespace GpuVk

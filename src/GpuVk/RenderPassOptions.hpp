@@ -4,6 +4,8 @@
 
 #include "Format.hpp"
 
+namespace GpuVk
+{
 struct ClearColor
 {
     float R;
@@ -23,3 +25,4 @@ struct RenderPassOptions
     bool EnableDepth;
     ColorAttachmentUsage ColorAttachmentUsage;
 };
+} // namespace GpuVk

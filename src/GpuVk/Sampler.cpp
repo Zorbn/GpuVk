@@ -1,6 +1,8 @@
 #include "Sampler.hpp"
 #include "Gpu.hpp"
 
+namespace GpuVk
+{
 Sampler::Sampler(std::shared_ptr<Gpu> gpu, const Image& image, FilterMode minFilter, FilterMode magFilter) : _gpu(gpu)
 {
     VkPhysicalDeviceProperties properties{};
@@ -62,3 +64,4 @@ VkFilter Sampler::GetVkFilter(FilterMode filterMode)
             throw std::runtime_error("Tried to get a VkFilter from an invalid filter mode!");
     }
 }
+} // namespace GpuVk

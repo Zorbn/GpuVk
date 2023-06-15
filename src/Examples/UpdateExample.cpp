@@ -5,6 +5,8 @@
  * Make a model that swaps between 2 meshes and has 3 instances.
  */
 
+using namespace GpuVk;
+
 struct VertexData
 {
     glm::vec3 Pos;

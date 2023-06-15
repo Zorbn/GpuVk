@@ -1,7 +1,10 @@
 #include "Pipeline.hpp"
 #include "File.hpp"
 
-Pipeline::Pipeline(std::shared_ptr<Gpu> gpu, const PipelineOptions& pipelineOptions, const RenderPass& renderPass) : _gpu(gpu)
+namespace GpuVk
+{
+Pipeline::Pipeline(std::shared_ptr<Gpu> gpu, const PipelineOptions& pipelineOptions, const RenderPass& renderPass)
+    : _gpu(gpu)
 {
     Create(pipelineOptions, renderPass);
 }
@@ -397,3 +400,4 @@ VkFormat Pipeline::GetVkFormat(Format format)
             throw std::runtime_error("Tried to get a VkFormat from an invalid format!");
     }
 }
+} // namespace GpuVk

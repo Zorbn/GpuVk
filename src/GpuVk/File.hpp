@@ -1,6 +1,9 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
+namespace GpuVk
+{
 std::vector<char> ReadFile(const std::string& filename);
+}

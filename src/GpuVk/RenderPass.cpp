@@ -1,6 +1,8 @@
 #include "RenderPass.hpp"
 #include "Swapchain.hpp"
 
+namespace GpuVk
+{
 RenderPass::RenderPass(std::shared_ptr<Gpu> gpu, RenderPassOptions renderPassOptions)
     : _gpu(gpu), _options(renderPassOptions)
 {
@@ -359,3 +361,4 @@ const VkSampleCountFlagBits RenderPass::GetMaxUsableSampleCount(VkPhysicalDevice
 
     return VK_SAMPLE_COUNT_1_BIT;
 }
+} // namespace GpuVk

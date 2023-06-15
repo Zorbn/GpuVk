@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+namespace GpuVk
+{
 std::vector<char> ReadFile(const std::string& filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -21,3 +23,4 @@ std::vector<char> ReadFile(const std::string& filename)
 
     return buffer;
 }
+} // namespace GpuVk

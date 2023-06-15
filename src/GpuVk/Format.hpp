@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.h>
 
+namespace GpuVk
+{
 enum class Format
 {
     Float,
@@ -9,5 +11,4 @@ enum class Format
     Float3,
     Float4
 };
-
-// TODO: Use namespaces for all GpuVk files, so that names like this don't conflict with anything else.
+} // namespace GpuVk

@@ -5,6 +5,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+namespace GpuVk
+{
 Image::Image(std::shared_ptr<Gpu> gpu, VkImage image, VkFormat format, VkImageAspectFlags viewAspectFlags)
     : _gpu(gpu), _image(image), _format(format)
 {
@@ -353,3 +355,4 @@ uint32_t Image::GetMipmapLevels() const
 {
     return _mipmapLevelCount;
 }
+} // namespace GpuVk

@@ -34,6 +34,8 @@
 #include "Swapchain.hpp"
 #include "UniformBuffer.hpp"
 
+namespace GpuVk
+{
 class RenderEngine
 {
     public:
@@ -68,3 +70,4 @@ class RenderEngine
     void WaitWhileMinimized();
     void Cleanup(IRenderer&);
 };
+} // namespace GpuVk
