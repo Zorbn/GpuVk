@@ -16,12 +16,12 @@ void RenderEngine::InitWindow(const std::string& windowTitle, const uint32_t win
         windowHeight, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 }
 
-void RenderEngine::InitVulkan(const uint32_t windowWidth, const uint32_t windowHeight)
+void RenderEngine::InitVulkan(PresentMode preferredPresentMode, const uint32_t windowWidth, const uint32_t windowHeight)
 {
     _gpu = std::make_shared<Gpu>(Gpu());
     _gpu->Init(_window);
 
-    _gpu->Swapchain = Swapchain(_gpu, windowWidth, windowHeight);
+    _gpu->Swapchain = Swapchain(_gpu, windowWidth, windowHeight, preferredPresentMode);
     _gpu->Commands = Commands(_gpu);
 }
 

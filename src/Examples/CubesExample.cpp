@@ -10,58 +10,10 @@ struct VertexData
     glm::vec3 Pos;
     glm::vec3 Color;
     glm::vec3 TexCoord;
-
-    static VkVertexInputBindingDescription GetBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(VertexData);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(VertexData, Pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(VertexData, Color);
-
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(VertexData, TexCoord);
-
-        return attributeDescriptions;
-    }
 };
 
 struct InstanceData
 {
-    static VkVertexInputBindingDescription GetBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 1;
-        bindingDescription.stride = sizeof(InstanceData);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
-
-        return bindingDescription;
-    }
-
-    static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions()
-    {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-        return attributeDescriptions;
-    }
 };
 
 struct UniformBufferData
@@ -194,18 +146,18 @@ class App : public IRenderer
     Pipeline _pipeline;
     RenderPass _renderPass;
 
+    ClearColor _clearColor;
+
     Image _textureImage;
-    VkImageView _textureImageView;
-    VkSampler _textureSampler;
+    Sampler _textureSampler;
 
     UniformBuffer<UniformBufferData> _ubo;
+    UniformBufferData _uboData;
     Model<VertexData, uint16_t, InstanceData> _voxelModel;
 
     std::vector<VertexData> _voxelVertices;
     std::vector<uint16_t> _voxelIndices;
-    std::vector<VkClearValue> _clearValues;
 
-    public:
     int32_t GetVoxel(size_t x, size_t y, size_t z)
     {
         if (x < 0 || x >= MapSize || y < 0 || y >= MapSize || z < 0 || z >= MapSize)
@@ -253,157 +205,103 @@ class App : public IRenderer
                 }
     }
 
-    void Init(Gpu& gpu, SDL_Window* window, int32_t width, int32_t height)
+    void UpdateProjectionMatrix(int32_t width, int32_t height)
     {
-        (void)window;
+        _uboData.Proj =
+            glm::perspective(glm::radians(45.0f), width / static_cast<float>(height), 0.1f, 20.0f);
+        _uboData.Proj[1][1] *= -1;
+    }
 
-        gpu.Swapchain.Create(
-            gpu._device, gpu._physicalDevice, gpu._surface, width, height);
-
-        gpu.Commands.CreatePool(
-            gpu._physicalDevice, gpu._device, gpu._surface);
-        gpu.Commands.CreateBuffers(gpu._device);
-
-        _textureImage = Image::CreateTextureArray("res/cubesImg.png", gpu._allocator, gpu.Commands,
-            gpu._graphicsQueue, gpu._device, true, 16, 16, 4);
-        _textureImageView = _textureImage.CreateTextureView(gpu._device);
-        _textureSampler = _textureImage.CreateTextureSampler(
-            gpu._physicalDevice, gpu._device, VK_FILTER_NEAREST, VK_FILTER_NEAREST);
+    public:
+    void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height)
+    {
+        _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
+        _textureSampler = Sampler(gpu, _textureImage, FilterMode::Nearest, FilterMode::Nearest);
 
         GenerateVoxelMesh();
-        _voxelModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(_voxelVertices, _voxelIndices,
-            1, gpu._allocator, gpu.Commands, gpu._graphicsQueue,
-            gpu._device);
-        std::vector<InstanceData> instances = {InstanceData{}};
-        _voxelModel.UpdateInstances(instances, gpu.Commands, gpu._allocator,
-            gpu._graphicsQueue, gpu._device);
+        _voxelModel =
+            Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(gpu, _voxelVertices, _voxelIndices, 1);
+        _voxelModel.UpdateInstances({InstanceData{}});
 
-        const VkExtent2D& extent = gpu.Swapchain.GetExtent();
-        _ubo.Create(gpu._allocator);
-
-        _renderPass.Create(gpu._physicalDevice, gpu._device, gpu._allocator,
-            gpu.Swapchain, true, false);
-
-        _pipeline.CreateDescriptorSetLayout(gpu._device,
-            [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
-            {
-                VkDescriptorSetLayoutBinding uboLayoutBinding{};
-                uboLayoutBinding.binding = 0;
-                uboLayoutBinding.descriptorCount = 1;
-                uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                uboLayoutBinding.pImmutableSamplers = nullptr;
-                uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-                VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-                samplerLayoutBinding.binding = 1;
-                samplerLayoutBinding.descriptorCount = 1;
-                samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                samplerLayoutBinding.pImmutableSamplers = nullptr;
-                samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-                bindings.push_back(uboLayoutBinding);
-                bindings.push_back(samplerLayoutBinding);
-            });
-        _pipeline.CreateDescriptorPool(gpu._device,
-            [&](std::vector<VkDescriptorPoolSize> poolSizes)
-            {
-                poolSizes.resize(2);
-                poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                // TODO: Make MaxFramesInFlight unnecessary for the user to know.
-                poolSizes[0].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
-                poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                poolSizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
-            });
-        _pipeline.CreateDescriptorSets(gpu._device,
-            [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
-            {
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = _ubo.GetBuffer(i);
-                bufferInfo.offset = 0;
-                bufferInfo.range = _ubo.GetDataSize();
-
-                VkDescriptorImageInfo imageInfo{};
-                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = _textureImageView;
-                imageInfo.sampler = _textureSampler;
-
-                descriptorWrites.resize(2);
-
-                descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet = descriptorSet;
-                descriptorWrites[0].dstBinding = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[1].dstSet = descriptorSet;
-                descriptorWrites[1].dstBinding = 1;
-                descriptorWrites[1].dstArrayElement = 0;
-                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo = &imageInfo;
-
-                vkUpdateDescriptorSets(gpu._device, static_cast<uint32_t>(descriptorWrites.size()),
-                    descriptorWrites.data(), 0, nullptr);
-            });
-        _pipeline.Create<VertexData, InstanceData>(
-            "res/cubesShader.vert.spv", "res/cubesShader.frag.spv", gpu._device, _renderPass, false);
-
-        _clearValues.resize(2);
-        _clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        _clearValues[1].depthStencil = {1.0f, 0};
-    }
-
-    void Update(Gpu& gpu)
-    {
-    }
-
-    void Render(Gpu& gpu)
-    {
-        const VkExtent2D& extent = gpu.Swapchain.GetExtent();
-
-        UniformBufferData uboData{};
-        uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        uboData.View =
+        _ubo = UniformBuffer<UniformBufferData>(gpu);
+        _uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        _uboData.View =
             glm::lookAt(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        uboData.Proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 20.0f);
-        uboData.Proj[1][1] *= -1;
+        UpdateProjectionMatrix(width, height);
 
-        _ubo.Update(uboData);
+        RenderPassOptions renderPassOptions{};
+        renderPassOptions.EnableDepth = true;
+        renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::Present;
+        _renderPass = RenderPass(gpu, renderPassOptions);
 
-        gpu.Commands.BeginBuffer();
+        VertexOptions vertexDataOptions{};
+        vertexDataOptions.Binding = 0;
+        vertexDataOptions.Size = sizeof(VertexData);
+        vertexDataOptions.VertexAttributes.push_back({
+            .Location = 0,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(VertexData, VertexData::Pos)),
+        });
+        vertexDataOptions.VertexAttributes.push_back({
+            .Location = 1,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(VertexData, VertexData::Color)),
+        });
+        vertexDataOptions.VertexAttributes.push_back({
+            .Location = 2,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(VertexData, VertexData::TexCoord)),
+        });
+        VertexOptions instanceDataOptions{};
+        instanceDataOptions.Binding = 1;
+        instanceDataOptions.Size = sizeof(InstanceData);
 
-        _renderPass.Begin(gpu.Swapchain, gpu.Commands, extent, _clearValues);
-        _pipeline.Bind(gpu.Commands);
-
-        _voxelModel.Draw(gpu.Commands);
-
-        _renderPass.End(gpu.Commands);
-
-        gpu.Commands.EndBuffer();
+        PipelineOptions pipelineOptions{};
+        pipelineOptions.VertexShader = "res/cubesShader.vert.spv";
+        pipelineOptions.FragmentShader = "res/cubesShader.frag.spv";
+        pipelineOptions.EnableTransparency = false;
+        pipelineOptions.VertexDataOptions = vertexDataOptions;
+        pipelineOptions.InstanceDataOptions = instanceDataOptions;
+        pipelineOptions.DescriptorLayouts.push_back({
+            .Binding = 0,
+            .Type = DescriptorType::UniformBuffer,
+            .ShaderStage = ShaderStage::Vertex,
+        });
+        pipelineOptions.DescriptorLayouts.push_back({
+            .Binding = 1,
+            .Type = DescriptorType::ImageSampler,
+            .ShaderStage = ShaderStage::Fragment,
+        });
+        _pipeline = Pipeline(gpu, pipelineOptions, _renderPass);
+        _pipeline.UpdateUniform(0, _ubo);
+        _pipeline.UpdateImage(1, _textureImage, _textureSampler);
     }
 
-    void Resize(Gpu& gpu, int32_t width, int32_t height)
+    void Update(std::shared_ptr<Gpu> gpu)
     {
-        (void)width, (void)height;
-
-        _renderPass.Recreate(gpu._device, gpu.Swapchain);
     }
 
-    void Cleanup(Gpu& gpu)
+    void Render(std::shared_ptr<Gpu> gpu)
     {
-        _pipeline.Cleanup(gpu._device);
-        _renderPass.Cleanup(gpu._device);
+        _ubo.Update(_uboData);
 
-        _ubo.Destroy(gpu._allocator);
+        gpu->Commands.BeginBuffer();
 
-        vkDestroySampler(gpu._device, _textureSampler, nullptr);
-        vkDestroyImageView(gpu._device, _textureImageView, nullptr);
-        _textureImage.Destroy(gpu._allocator);
+        _renderPass.Begin(_clearColor);
+        _pipeline.Bind();
 
-        _voxelModel.Destroy(gpu._allocator);
+        _voxelModel.Draw();
+
+        _renderPass.End();
+
+        gpu->Commands.EndBuffer();
+    }
+
+    void Resize(std::shared_ptr<Gpu> gpu, int32_t width, int32_t height)
+    {
+        UpdateProjectionMatrix(width, height);
+
+        _renderPass.UpdateResources();
     }
 };
 
@@ -412,8 +310,7 @@ int main()
     try
     {
         RenderEngine renderEngine;
-        App app;
-        renderEngine.Run("Cubes", 640, 480, app);
+        renderEngine.Run("Cubes", 640, 480, App());
     }
     catch (const std::exception& e)
     {

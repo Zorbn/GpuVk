@@ -9,8 +9,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../../deps/stb_image.h"
-
 #include <vk_mem_alloc.h>
 
 #include <algorithm>
@@ -40,11 +38,12 @@ class RenderEngine
 {
     public:
     template <class T>
-    typename std::enable_if<std::is_base_of<IRenderer, T>::value>::type Run(
-        const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight, T renderer)
+    typename std::enable_if<std::is_base_of<IRenderer, T>::value>::type Run(const std::string& windowTitle,
+        const uint32_t windowWidth, const uint32_t windowHeight, T renderer,
+        PresentMode preferredPresentMode = PresentMode::Vsync)
     {
         InitWindow(windowTitle, windowWidth, windowHeight);
-        InitVulkan(windowWidth, windowHeight);
+        InitVulkan(preferredPresentMode, windowWidth, windowHeight);
         renderer.Init(_gpu, _window, windowWidth, windowHeight);
         MainLoop(renderer);
         // Destruct the renderer before cleaning up the resources it may be using.
@@ -62,7 +61,7 @@ class RenderEngine
     bool _framebufferResized = false;
 
     void InitWindow(const std::string& windowTitle, const uint32_t windowWidth, const uint32_t windowHeight);
-    void InitVulkan(const uint32_t windowWidth, const uint32_t windowHeight);
+    void InitVulkan(PresentMode preferredPresentMode, const uint32_t windowWidth, const uint32_t windowHeight);
 
     void MainLoop(IRenderer&);
     void DrawFrame(IRenderer&);

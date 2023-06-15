@@ -2,7 +2,7 @@
 #include "Gpu.hpp"
 
 Swapchain::Swapchain(
-    std::shared_ptr<Gpu> gpu, int32_t windowWidth, int32_t windowHeight, VkPresentModeKHR preferredPresentMode)
+    std::shared_ptr<Gpu> gpu, int32_t windowWidth, int32_t windowHeight, PresentMode preferredPresentMode)
     : _gpu(gpu), _preferredPresentMode(preferredPresentMode)
 {
     Create(windowWidth, windowHeight);
@@ -18,6 +18,7 @@ Swapchain& Swapchain::operator=(Swapchain&& other)
     std::swap(_gpu, other._gpu);
 
     std::swap(_swapchain, other._swapchain);
+    std::swap(_preferredPresentMode, other._preferredPresentMode);
     std::swap(_extent, other._extent);
     std::swap(_imageFormat, other._imageFormat);
     std::swap(_currentImageIndex, other._currentImageIndex);
@@ -38,7 +39,8 @@ void Swapchain::Create(int32_t windowWidth, int32_t windowHeight)
     SwapchainSupportDetails swapchainSupport = QuerySupport(_gpu->_physicalDevice, _gpu->_surface);
 
     VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapchainSupport.Formats);
-    VkPresentModeKHR presentMode = ChoosePresentMode(swapchainSupport.PresentModes, _preferredPresentMode);
+    VkPresentModeKHR presentMode =
+        ChoosePresentMode(swapchainSupport.PresentModes, GetVkPresentMode(_preferredPresentMode));
     _extent = ChooseExtent(swapchainSupport.Capabilities, windowWidth, windowHeight);
 
     uint32_t imageCount = swapchainSupport.Capabilities.minImageCount + 1;
@@ -89,6 +91,12 @@ void Swapchain::Destroy()
     vkDestroySwapchainKHR(_gpu->_device, _swapchain, nullptr);
 }
 
+void Swapchain::UpdatePresentMode(PresentMode presentMode)
+{
+    _preferredPresentMode = presentMode;
+    Resize(_extent.width, _extent.height);
+}
+
 void Swapchain::Resize(int32_t windowWidth, int32_t windowHeight)
 {
     vkDeviceWaitIdle(_gpu->_device);
@@ -123,6 +131,19 @@ SwapchainSupportDetails Swapchain::QuerySupport(VkPhysicalDevice physicalDevice,
     }
 
     return details;
+}
+
+VkPresentModeKHR Swapchain::GetVkPresentMode(PresentMode presentMode)
+{
+    switch (presentMode)
+    {
+        case PresentMode::Vsync:
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+        case PresentMode::NoVsync:
+            return VK_PRESENT_MODE_IMMEDIATE_KHR;
+        default:
+            throw std::runtime_error("Tried to get a VkPresentModeKHR from an invalid present mode!");
+    }
 }
 
 VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)

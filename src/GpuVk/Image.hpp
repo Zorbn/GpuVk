@@ -7,8 +7,6 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 
-#include "../../deps/stb_image.h"
-
 class Gpu;
 class Buffer;
 
@@ -52,7 +50,7 @@ class Image
     uint32_t _layerCount = 1;
     uint32_t _width = 0;
     uint32_t _height = 0;
-    uint32_t _mipmapLevels = 1;
+    uint32_t _mipmapLevelCount = 1;
 
     static Buffer LoadImage(std::shared_ptr<Gpu> gpu, const std::string& image, int32_t& width, int32_t& height);
     static uint32_t CalcMipmapLevels(int32_t texWidth, int32_t texHeight);

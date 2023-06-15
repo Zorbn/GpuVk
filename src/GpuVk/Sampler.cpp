@@ -52,17 +52,13 @@ Sampler::~Sampler()
 
 VkFilter Sampler::GetVkFilter(FilterMode filterMode)
 {
-    VkFilter vkFilter;
-
     switch (filterMode)
     {
         case FilterMode::Linear:
-            vkFilter = VK_FILTER_LINEAR;
-            break;
+            return VK_FILTER_LINEAR;
         case FilterMode::Nearest:
-            vkFilter = VK_FILTER_NEAREST;
-            break;
+            return VK_FILTER_NEAREST;
+        default:
+            throw std::runtime_error("Tried to get a VkFilter from an invalid filter mode!");
     }
-
-    return vkFilter;
 }

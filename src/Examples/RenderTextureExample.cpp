@@ -144,6 +144,7 @@ const std::array<std::array<int32_t, 3>, 6> Directions = {{
 class App : public IRenderer
 {
     private:
+    // TODO: Give these more helpful names than _ and final_.
     Pipeline _pipeline;
     Pipeline _finalPipeline;
     RenderPass _renderPass;
@@ -151,19 +152,15 @@ class App : public IRenderer
 
     ClearColor _clearColor;
 
-    Image _textureImage;
-    Sampler _textureSampler;
-
     Sampler _colorSampler;
 
     UniformBuffer<UniformBufferData> _ubo;
-    UniformBufferData _uboData{};
+    UniformBufferData _uboData;
     Model<VertexData, uint16_t, InstanceData> _voxelModel;
 
     std::vector<VertexData> _voxelVertices;
     std::vector<uint16_t> _voxelIndices;
 
-    public:
     int32_t GetVoxel(size_t x, size_t y, size_t z)
     {
         if (x < 0 || x >= MapSize || y < 0 || y >= MapSize || z < 0 || z >= MapSize)
@@ -218,13 +215,9 @@ class App : public IRenderer
         _uboData.Proj[1][1] *= -1;
     }
 
+    public:
     void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height)
     {
-        (void)window;
-
-        _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
-        _textureSampler = Sampler(gpu, _textureImage, FilterMode::Nearest, FilterMode::Nearest);
-
         GenerateVoxelMesh();
         _voxelModel =
             Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(gpu, _voxelVertices, _voxelIndices, 2);
@@ -292,15 +285,9 @@ class App : public IRenderer
             .Type = DescriptorType::ImageSampler,
             .ShaderStage = ShaderStage::Fragment,
         });
-        finalPipelineOptions.DescriptorLayouts.push_back({
-            .Binding = 2,
-            .Type = DescriptorType::ImageSampler,
-            .ShaderStage = ShaderStage::Fragment,
-        });
         _finalPipeline = Pipeline(gpu, finalPipelineOptions, _finalRenderPass);
         _finalPipeline.UpdateUniform(0, _ubo);
-        _finalPipeline.UpdateImage(1, _textureImage, _textureSampler);
-        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage(), _colorSampler);
+        _finalPipeline.UpdateImage(1, _renderPass.GetColorImage(), _colorSampler);
 
         PipelineOptions pipelineOptions{};
         pipelineOptions.VertexShader = "res/renderTextureShader.vert.spv";
@@ -352,8 +339,7 @@ class App : public IRenderer
 
         _renderPass.UpdateResources();
         _finalRenderPass.UpdateResources();
-        _finalPipeline.UpdateImage(1, _textureImage, _textureSampler);
-        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage(), _colorSampler);
+        _finalPipeline.UpdateImage(1, _renderPass.GetColorImage(), _colorSampler);
     }
 };
 

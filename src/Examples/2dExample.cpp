@@ -11,85 +11,14 @@ struct VertexData
     glm::vec3 Pos;
     glm::vec3 Color;
     glm::vec2 TexCoord;
-
-    static VkVertexInputBindingDescription GetBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(VertexData);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(VertexData, Pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(VertexData, Color);
-
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(VertexData, TexCoord);
-
-        return attributeDescriptions;
-    }
 };
 
 struct InstanceData
 {
-    public:
     glm::vec3 Pos;
     glm::vec2 Size;
     glm::vec2 TexPos;
     glm::vec2 TexSize;
-
-    static VkVertexInputBindingDescription GetBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 1;
-        bindingDescription.stride = sizeof(InstanceData);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
-
-        return bindingDescription;
-    }
-
-    static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions()
-    {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-        attributeDescriptions.resize(4);
-
-        attributeDescriptions[0].binding = 1;
-        attributeDescriptions[0].location = 3;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(InstanceData, Pos);
-
-        attributeDescriptions[1].binding = 1;
-        attributeDescriptions[1].location = 4;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(InstanceData, Size);
-
-        attributeDescriptions[2].binding = 1;
-        attributeDescriptions[2].location = 5;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(InstanceData, TexPos);
-
-        attributeDescriptions[3].binding = 1;
-        attributeDescriptions[3].location = 6;
-        attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[3].offset = offsetof(InstanceData, TexSize);
-
-        return attributeDescriptions;
-    }
 };
 
 struct UniformBufferData
@@ -113,30 +42,27 @@ class SpriteBatch
     private:
     Model<VertexData, uint16_t, InstanceData> _spriteModel;
     std::vector<InstanceData> _instances;
+
     Image _textureImage;
-    VkImageView _textureImageView;
-    VkSampler _textureSampler;
+    Sampler _textureSampler;
+
     float _inverseImageWidth = 0.0f;
     float _inverseImageHeight = 0.0f;
 
     public:
-    void Init(Gpu& vulkanState, const std::string& image, size_t maxSprites)
+    void Init(std::shared_ptr<Gpu> gpu, const std::string& image, size_t maxSprites)
     {
-        _textureImage = Image::CreateTexture(image, vulkanState._allocator, vulkanState.Commands,
-            vulkanState._graphicsQueue, vulkanState._device, false);
-        _textureImageView = _textureImage.CreateTextureView(vulkanState._device);
-        _textureSampler = _textureImage.CreateTextureSampler(
-            vulkanState._physicalDevice, vulkanState._device, VK_FILTER_NEAREST, VK_FILTER_NEAREST);
+        _textureImage = Image::CreateTexture(gpu, image, false);
+        _textureSampler = Sampler(gpu, _textureImage, FilterMode::Nearest, FilterMode::Nearest);
 
         _inverseImageWidth = 1.0f / _textureImage.GetWidth();
         _inverseImageHeight = 1.0f / _textureImage.GetHeight();
 
-        _spriteModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(SpriteVertices, SpriteIndices,
-            maxSprites, vulkanState._allocator, vulkanState.Commands, vulkanState._graphicsQueue,
-            vulkanState._device);
+        _spriteModel = Model<VertexData, uint16_t, InstanceData>::FromVerticesAndIndices(
+            gpu, SpriteVertices, SpriteIndices, maxSprites);
     }
 
-    void Begin(Gpu& vulkanState)
+    void Begin()
     {
         _instances.clear();
     }
@@ -149,32 +75,22 @@ class SpriteBatch
             glm::vec2(texWidth * _inverseImageWidth, texHeight * _inverseImageHeight)});
     }
 
-    void End(Gpu& vulkanState)
+    void End()
     {
-        _spriteModel.UpdateInstances(_instances, vulkanState.Commands, vulkanState._allocator,
-            vulkanState._graphicsQueue, vulkanState._device);
+        _spriteModel.UpdateInstances(_instances);
     }
 
-    void Draw(const VkCommandBuffer& commandBuffer)
+    void Draw()
     {
-        _spriteModel.Draw(commandBuffer);
+        _spriteModel.Draw();
     }
 
-    void Cleanup(Gpu& vulkanState)
+    const Image& GetImage()
     {
-        vkDestroySampler(vulkanState._device, _textureSampler, nullptr);
-        vkDestroyImageView(vulkanState._device, _textureImageView, nullptr);
-        _textureImage.Destroy(vulkanState._allocator);
-
-        _spriteModel.Destroy(vulkanState._allocator);
+        return _textureImage;
     }
 
-    const VkImageView& GetView()
-    {
-        return _textureImageView;
-    }
-
-    const VkSampler& GetSampler()
+    const Sampler& GetSampler()
     {
         return _textureSampler;
     }
@@ -186,152 +102,128 @@ class App : public IRenderer
     Pipeline _pipeline;
     RenderPass _renderPass;
 
-    UniformBuffer<UniformBufferData> _ubo;
+    ClearColor _clearColor;
 
-    std::vector<VkClearValue> _clearValues;
+    UniformBuffer<UniformBufferData> _ubo;
+    UniformBufferData _uboData;
 
     SpriteBatch _spriteBatch;
 
-    public:
-    void Init(Gpu& vulkanState, SDL_Window* window, int32_t width, int32_t height)
+    void UpdateProjectionMatrix(int32_t width, int32_t height)
     {
-        (void)window;
-
-        vulkanState.Swapchain.Create(
-            vulkanState._device, vulkanState._physicalDevice, vulkanState._surface, width, height);
-
-        vulkanState.Commands.CreatePool(
-            vulkanState._physicalDevice, vulkanState._device, vulkanState._surface);
-        vulkanState.Commands.CreateBuffers(vulkanState._device);
-
-        _ubo.Create(vulkanState._allocator);
-
-        _spriteBatch.Init(vulkanState, "res/cubesImg.png", 30);
-
-        _renderPass.Create(vulkanState._physicalDevice, vulkanState._device, vulkanState._allocator,
-            vulkanState.Swapchain, true, true);
-
-        _pipeline.CreateDescriptorSetLayout(vulkanState._device,
-            [&](std::vector<VkDescriptorSetLayoutBinding>& bindings)
-            {
-                VkDescriptorSetLayoutBinding uboLayoutBinding{};
-                uboLayoutBinding.binding = 0;
-                uboLayoutBinding.descriptorCount = 1;
-                uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                uboLayoutBinding.pImmutableSamplers = nullptr;
-                uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-                VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-                samplerLayoutBinding.binding = 1;
-                samplerLayoutBinding.descriptorCount = 1;
-                samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                samplerLayoutBinding.pImmutableSamplers = nullptr;
-                samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-                bindings.push_back(uboLayoutBinding);
-                bindings.push_back(samplerLayoutBinding);
-            });
-        _pipeline.CreateDescriptorPool(vulkanState._device,
-            [&](std::vector<VkDescriptorPoolSize> poolSizes)
-            {
-                poolSizes.resize(2);
-                poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                poolSizes[0].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
-                poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                poolSizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
-            });
-        _pipeline.CreateDescriptorSets(vulkanState._device,
-            [&](std::vector<VkWriteDescriptorSet>& descriptorWrites, VkDescriptorSet descriptorSet, uint32_t i)
-            {
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = _ubo.GetBuffer(i);
-                bufferInfo.offset = 0;
-                bufferInfo.range = _ubo.GetDataSize();
-
-                VkDescriptorImageInfo imageInfo{};
-                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = _spriteBatch.GetView();
-                imageInfo.sampler = _spriteBatch.GetSampler();
-
-                descriptorWrites.resize(2);
-
-                descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet = descriptorSet;
-                descriptorWrites[0].dstBinding = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-                descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[1].dstSet = descriptorSet;
-                descriptorWrites[1].dstBinding = 1;
-                descriptorWrites[1].dstArrayElement = 0;
-                descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo = &imageInfo;
-
-                vkUpdateDescriptorSets(vulkanState._device, static_cast<uint32_t>(descriptorWrites.size()),
-                    descriptorWrites.data(), 0, nullptr);
-            });
-        _pipeline.Create<VertexData, InstanceData>(
-            "res/2dShader.vert.spv", "res/2dShader.frag.spv", vulkanState._device, _renderPass, false);
-
-        _clearValues.resize(2);
-        _clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        _clearValues[1].depthStencil = {1.0f, 0};
+        _uboData.Proj = glm::ortho(0.0f, static_cast<float>(width), 0.0f, static_cast<float>(height), 0.1f, 10.0f);
     }
 
-    void Update(Gpu& vulkanState)
+    public:
+    void Init(std::shared_ptr<Gpu> gpu, SDL_Window* window, int32_t width, int32_t height)
     {
-        _spriteBatch.Begin(vulkanState);
+        _ubo = UniformBuffer<UniformBufferData>(gpu);
+        _uboData.Model = glm::mat4(1.0f);
+        _uboData.View =
+            glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        UpdateProjectionMatrix(width, height);
+
+        _spriteBatch.Init(gpu, "res/cubesImg.png", 30);
+
+        RenderPassOptions renderPassOptions{};
+        renderPassOptions.EnableDepth = true;
+        renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::Present;
+        _renderPass = RenderPass(gpu, renderPassOptions);
+
+        VertexOptions vertexDataOptions{};
+        vertexDataOptions.Binding = 0;
+        vertexDataOptions.Size = sizeof(VertexData);
+        vertexDataOptions.VertexAttributes.push_back({
+            .Location = 0,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(VertexData, VertexData::Pos)),
+        });
+        vertexDataOptions.VertexAttributes.push_back({
+            .Location = 1,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(VertexData, VertexData::Color)),
+        });
+        vertexDataOptions.VertexAttributes.push_back({
+            .Location = 2,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(VertexData, VertexData::TexCoord)),
+        });
+        VertexOptions instanceDataOptions{};
+        instanceDataOptions.Binding = 1;
+        instanceDataOptions.Size = sizeof(InstanceData);
+        instanceDataOptions.VertexAttributes.push_back({
+            .Location = 3,
+            .Format = Format::Float3,
+            .Offset = static_cast<uint32_t>(offsetof(InstanceData, Pos)),
+        });
+        instanceDataOptions.VertexAttributes.push_back({
+            .Location = 4,
+            .Format = Format::Float2,
+            .Offset = static_cast<uint32_t>(offsetof(InstanceData, Size)),
+        });
+        instanceDataOptions.VertexAttributes.push_back({
+            .Location = 5,
+            .Format = Format::Float2,
+            .Offset = static_cast<uint32_t>(offsetof(InstanceData, TexPos)),
+        });
+        instanceDataOptions.VertexAttributes.push_back({
+            .Location = 6,
+            .Format = Format::Float2,
+            .Offset = static_cast<uint32_t>(offsetof(InstanceData, TexSize)),
+        });
+
+        PipelineOptions pipelineOptions{};
+        pipelineOptions.VertexShader = "res/2dShader.vert.spv";
+        pipelineOptions.FragmentShader = "res/2dShader.frag.spv";
+        pipelineOptions.EnableTransparency = false;
+        pipelineOptions.VertexDataOptions = vertexDataOptions;
+        pipelineOptions.InstanceDataOptions = instanceDataOptions;
+        pipelineOptions.DescriptorLayouts.push_back({
+            .Binding = 0,
+            .Type = DescriptorType::UniformBuffer,
+            .ShaderStage = ShaderStage::Vertex,
+        });
+        pipelineOptions.DescriptorLayouts.push_back({
+            .Binding = 1,
+            .Type = DescriptorType::ImageSampler,
+            .ShaderStage = ShaderStage::Fragment,
+        });
+        _pipeline = Pipeline(gpu, pipelineOptions, _renderPass);
+        _pipeline.UpdateUniform(0, _ubo);
+        _pipeline.UpdateImage(1, _spriteBatch.GetImage(), _spriteBatch.GetSampler());
+    }
+
+    void Update(std::shared_ptr<Gpu> gpu)
+    {
+        _spriteBatch.Begin();
 
         _spriteBatch.Add(0, 0, 0, 32, 16, 0, 16, 32, 16);
         _spriteBatch.Add(16, 0, -1, 64, 32, 0, 16, 32, 16);
 
-        _spriteBatch.End(vulkanState);
+        _spriteBatch.End();
     }
 
-    void Render(Gpu& vulkanState, VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t currentFrame)
+    void Render(std::shared_ptr<Gpu> gpu)
     {
-        const VkExtent2D& extent = vulkanState.Swapchain.GetExtent();
+        _ubo.Update(_uboData);
 
-        UniformBufferData uboData{};
-        uboData.Model = glm::mat4(1.0f);
-        uboData.View =
-            glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        uboData.Proj =
-            glm::ortho(0.0f, static_cast<float>(extent.width), 0.0f, static_cast<float>(extent.height), 0.1f, 10.0f);
+        gpu->Commands.BeginBuffer();
 
-        _ubo.Update(uboData);
+        _renderPass.Begin(_clearColor);
+        _pipeline.Bind();
 
-        vulkanState.Commands.BeginBuffer(currentFrame);
+        _spriteBatch.Draw();
 
-        _renderPass.Begin(imageIndex, commandBuffer, extent, _clearValues);
-        _pipeline.Bind(commandBuffer, currentFrame);
+        _renderPass.End();
 
-        _spriteBatch.Draw(commandBuffer);
-
-        _renderPass.End(commandBuffer);
-
-        vulkanState.Commands.EndBuffer(currentFrame);
+        gpu->Commands.EndBuffer();
     }
 
-    void Resize(Gpu& vulkanState, int32_t width, int32_t height)
+    void Resize(std::shared_ptr<Gpu> gpu, int32_t width, int32_t height)
     {
-        (void)width, (void)height;
+        UpdateProjectionMatrix(width, height);
 
-        _renderPass.Recreate(vulkanState._device, vulkanState.Swapchain);
-    }
-
-    void Cleanup(Gpu& vulkanState)
-    {
-        _pipeline.Cleanup(vulkanState._device);
-        _renderPass.Cleanup(vulkanState._device);
-
-        _ubo.Destroy(vulkanState._allocator);
-
-        _spriteBatch.Cleanup(vulkanState);
+        _renderPass.UpdateResources();
     }
 };
 
@@ -340,8 +232,7 @@ int main()
     try
     {
         RenderEngine renderEngine;
-        App app;
-        renderEngine.Run("2d", 640, 480, app);
+        renderEngine.Run("2d", 640, 480, App());
     }
     catch (const std::exception& e)
     {
