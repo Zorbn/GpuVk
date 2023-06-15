@@ -20,7 +20,7 @@ class RenderPass
     RenderPass& operator=(RenderPass&& other);
     ~RenderPass();
 
-    void Begin(const std::vector<VkClearValue>& clearValues);
+    void Begin(const ClearColor& clearColor);
     void End();
 
     const VkRenderPass& GetRenderPass() const;

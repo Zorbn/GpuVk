@@ -149,17 +149,18 @@ class App : public IRenderer
     RenderPass _renderPass;
     RenderPass _finalRenderPass;
 
-    Image _textureImage;
-    VkSampler _textureSampler;
+    ClearColor _clearColor;
 
-    VkSampler _colorSampler;
+    Image _textureImage;
+    Sampler _textureSampler;
+
+    Sampler _colorSampler;
 
     UniformBuffer<UniformBufferData> _ubo;
     Model<VertexData, uint16_t, InstanceData> _voxelModel;
 
     std::vector<VertexData> _voxelVertices;
     std::vector<uint16_t> _voxelIndices;
-    std::vector<VkClearValue> _clearValues;
 
     public:
     int32_t GetVoxel(size_t x, size_t y, size_t z)
@@ -185,7 +186,7 @@ class App : public IRenderer
 
                     for (size_t face = 0; face < 6; face++)
                     {
-                        if (GetVoxel(x + +Directions[face][0], y + Directions[face][1], z + Directions[face][2]) != 0)
+                        if (GetVoxel(x + Directions[face][0], y + Directions[face][1], z + Directions[face][2]) != 0)
                             continue;
 
                         size_t vertexCount = _voxelVertices.size();
@@ -214,7 +215,7 @@ class App : public IRenderer
         (void)window;
 
         _textureImage = Image::CreateTextureArray(gpu, "res/cubesImg.png", true, 16, 16, 4);
-        _textureSampler = _textureImage.CreateTextureSampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST);
+        _textureSampler = Sampler(gpu, _textureImage, FilterMode::Nearest, FilterMode::Nearest);
 
         GenerateVoxelMesh();
         _voxelModel =
@@ -223,14 +224,13 @@ class App : public IRenderer
             InstanceData{glm::vec3(0.0, 0.0, 0.0)}, InstanceData{glm::vec3(-2.0, 0.0, -5.0)}};
         _voxelModel.UpdateInstances(instances);
 
-        const VkExtent2D& extent = gpu->Swapchain.GetExtent();
         _ubo = UniformBuffer<UniformBufferData>(gpu);
 
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
         renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::ReadFromShader;
         _renderPass = RenderPass(gpu, renderPassOptions);
-        _colorSampler = _renderPass.GetColorImage().CreateTextureSampler();
+        _colorSampler = Sampler(gpu, _renderPass.GetColorImage());
 
         RenderPassOptions finalRenderPassOptions{};
         finalRenderPassOptions.EnableDepth = true;
@@ -287,9 +287,8 @@ class App : public IRenderer
         });
         _finalPipeline = Pipeline(gpu, finalPipelineOptions, _finalRenderPass);
         _finalPipeline.UpdateUniform(0, _ubo);
-        // TODO: Update image should take an image rather than a raw image view:
-        _finalPipeline.UpdateImage(1, _textureImage.GetView(), _textureSampler);
-        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage().GetView(), _colorSampler);
+        _finalPipeline.UpdateImage(1, _textureImage, _textureSampler);
+        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage(), _colorSampler);
 
         PipelineOptions pipelineOptions{};
         pipelineOptions.VertexShader = "res/renderTextureShader.vert.spv";
@@ -304,10 +303,6 @@ class App : public IRenderer
         });
         _pipeline = Pipeline(gpu, pipelineOptions, _renderPass);
         _pipeline.UpdateUniform(0, _ubo);
-
-        _clearValues.resize(2);
-        _clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        _clearValues[1].depthStencil = {1.0f, 0};
     }
 
     void Update(std::shared_ptr<Gpu> gpu)
@@ -323,23 +318,24 @@ class App : public IRenderer
         uboData.Model = glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         uboData.View =
             glm::lookAt(glm::vec3(10.0f, 10.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        uboData.Proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 20.0f);
+        uboData.Proj =
+            glm::perspective(glm::radians(45.0f), extent.width / static_cast<float>(extent.height), 0.1f, 20.0f);
         uboData.Proj[1][1] *= -1;
 
         _ubo.Update(uboData);
 
         gpu->Commands.BeginBuffer();
 
-        _clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        _renderPass.Begin(_clearValues);
+        _clearColor = {0.0f, 0.0f, 0.0f};
+        _renderPass.Begin(_clearColor);
         _pipeline.Bind();
 
         _voxelModel.Draw();
 
         _renderPass.End();
 
-        _clearValues[0].color = {{0.0f, 0.0f, 1.0f, 1.0f}};
-        _finalRenderPass.Begin(_clearValues);
+        _clearColor = {0.0f, 0.0f, 1.0f};
+        _finalRenderPass.Begin(_clearColor);
         _finalPipeline.Bind();
 
         _voxelModel.Draw();
@@ -355,15 +351,8 @@ class App : public IRenderer
 
         _renderPass.UpdateResources();
         _finalRenderPass.UpdateResources();
-        _finalPipeline.UpdateImage(1, _textureImage.GetView(), _textureSampler);
-        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage().GetView(), _colorSampler);
-    }
-
-    void Cleanup(std::shared_ptr<Gpu> gpu)
-    {
-        vkDestroySampler(gpu->Device, _colorSampler, nullptr);
-
-        vkDestroySampler(gpu->Device, _textureSampler, nullptr);
+        _finalPipeline.UpdateImage(1, _textureImage, _textureSampler);
+        _finalPipeline.UpdateImage(2, _renderPass.GetColorImage(), _colorSampler);
     }
 };
 

@@ -4,6 +4,13 @@
 
 #include "Format.hpp"
 
+struct ClearColor
+{
+    float R;
+    float G;
+    float B;
+};
+
 enum class ColorAttachmentUsage
 {
     Present,

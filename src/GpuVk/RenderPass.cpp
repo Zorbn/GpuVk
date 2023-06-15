@@ -165,10 +165,14 @@ void RenderPass::CreateImages()
     }
 }
 
-void RenderPass::Begin(const std::vector<VkClearValue>& clearValues)
+void RenderPass::Begin(const ClearColor& clearColor)
 {
     auto extent = _gpu->Swapchain.GetExtent();
     auto currentImageIndex = _gpu->Swapchain.GetCurrentImageIndex();
+
+    std::array<VkClearValue, 2> clearValues;
+    clearValues[0].color = {{clearColor.R, clearColor.G, clearColor.B, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

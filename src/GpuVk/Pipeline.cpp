@@ -38,14 +38,14 @@ Pipeline::~Pipeline()
     vkDestroyDescriptorSetLayout(_gpu->Device, _descriptorSetLayout, nullptr);
 }
 
-void Pipeline::UpdateImage(uint32_t binding, VkImageView imageView, VkSampler imageSampler)
+void Pipeline::UpdateImage(uint32_t binding, const Image& image, const Sampler& sampler)
 {
     for (uint32_t i = 0; i < MaxFramesInFlight; i++)
     {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = imageView;
-        imageInfo.sampler = imageSampler;
+        imageInfo.imageView = image.GetView();
+        imageInfo.sampler = sampler._sampler;
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

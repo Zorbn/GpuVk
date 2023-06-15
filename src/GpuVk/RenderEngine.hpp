@@ -48,7 +48,6 @@ class RenderEngine
         renderer.Init(_gpu, _window, windowWidth, windowHeight);
         MainLoop(renderer);
         // Destruct the renderer before cleaning up the resources it may be using.
-        renderer.Cleanup(_gpu);
         {
             auto _ = std::move(renderer);
         }

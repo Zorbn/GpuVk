@@ -215,37 +215,6 @@ Image Image::CreateTextureArray(std::shared_ptr<Gpu> gpu, const std::string& ima
     return textureImage;
 }
 
-VkSampler Image::CreateTextureSampler(VkFilter minFilter, VkFilter magFilter) const
-{
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(_gpu->PhysicalDevice, &properties);
-
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = magFilter;
-    samplerInfo.minFilter = minFilter;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.maxLod = static_cast<float>(_mipmapLevels);
-
-    VkSampler textureSampler;
-
-    if (vkCreateSampler(_gpu->Device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create texture sampler!");
-    }
-
-    return textureSampler;
-}
-
 void Image::CreateView(VkImageAspectFlags aspectFlags)
 {
     VkImageViewCreateInfo viewInfo{};
@@ -374,6 +343,11 @@ uint32_t Image::GetWidth() const
 uint32_t Image::GetHeight() const
 {
     return _height;
+}
+
+uint32_t Image::GetMipmapLevels() const
+{
+    return _mipmapLevels;
 }
 
 VkImageView Image::GetView() const

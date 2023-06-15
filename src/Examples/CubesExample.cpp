@@ -253,7 +253,6 @@ class App : public IRenderer
                 }
     }
 
-    // TODO: Remove width/height parameters
     void Init(Gpu& gpu, SDL_Window* window, int32_t width, int32_t height)
     {
         (void)window;

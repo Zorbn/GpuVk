@@ -14,6 +14,7 @@
 #include "Constants.hpp"
 #include "UniformBuffer.hpp"
 #include "PipelineOptions.hpp"
+#include "Sampler.hpp"
 
 class Pipeline
 {
@@ -46,7 +47,7 @@ class Pipeline
         }
     }
 
-    void UpdateImage(uint32_t binding, VkImageView imageView, VkSampler imageSampler);
+    void UpdateImage(uint32_t binding, const Image& image, const Sampler& sampler);
 
     void Bind();
 

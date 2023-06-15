@@ -3,7 +3,6 @@
 #include "Commands.hpp"
 
 #include <cmath>
-#include <optional>
 
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
@@ -27,10 +26,11 @@ class Image
     Image& operator=(Image&& other);
     ~Image();
 
-    VkSampler CreateTextureSampler(VkFilter minFilter = VK_FILTER_LINEAR, VkFilter magFilter = VK_FILTER_LINEAR) const;
-
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
+    uint32_t GetMipmapLevels() const;
+    // TODO: Should these types of getters be removed, and instead just friend the class that needs them,
+    // so that references to Vk objects can be removed from the public API?
     VkImageView GetView() const;
 
     private:
