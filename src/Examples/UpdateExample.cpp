@@ -43,8 +43,8 @@ const std::vector<uint16_t> TestIndices2 = {0, 1, 2};
 class App : public IRenderer
 {
     private:
-    Pipeline _pipeline;
-    RenderPass _renderPass;
+    Pipeline _offscreenPipeline;
+    RenderPass _offscreenRenderPass;
 
     ClearColor _clearColor;
 
@@ -80,7 +80,7 @@ class App : public IRenderer
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
         renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::PresentWithMsaa;
-        _renderPass = RenderPass(gpu, renderPassOptions);
+        _offscreenRenderPass = RenderPass(gpu, renderPassOptions);
 
         VertexOptions vertexDataOptions{};
         vertexDataOptions.Binding = 0;
@@ -125,9 +125,9 @@ class App : public IRenderer
             .Type = DescriptorType::ImageSampler,
             .ShaderStage = ShaderStage::Fragment,
         });
-        _pipeline = Pipeline(gpu, pipelineOptions, _renderPass);
-        _pipeline.UpdateUniform(0, _ubo);
-        _pipeline.UpdateImage(1, _textureImage, _textureSampler);
+        _offscreenPipeline = Pipeline(gpu, pipelineOptions, _offscreenRenderPass);
+        _offscreenPipeline.UpdateUniform(0, _ubo);
+        _offscreenPipeline.UpdateImage(1, _textureImage, _textureSampler);
     }
 
     void Update(std::shared_ptr<Gpu> gpu)
@@ -158,12 +158,12 @@ class App : public IRenderer
 
         gpu->Commands.BeginBuffer();
 
-        _renderPass.Begin(_clearColor);
-        _pipeline.Bind();
+        _offscreenRenderPass.Begin(_clearColor);
+        _offscreenPipeline.Bind();
 
         _spriteModel.Draw();
 
-        _renderPass.End();
+        _offscreenRenderPass.End();
 
         gpu->Commands.EndBuffer();
     }
@@ -172,7 +172,7 @@ class App : public IRenderer
     {
         UpdateProjectionMatrix(width, height);
 
-        _renderPass.UpdateResources();
+        _offscreenRenderPass.UpdateResources();
     }
 };
 

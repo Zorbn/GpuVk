@@ -27,8 +27,9 @@ struct UniformBufferData
 };
 
 const int32_t MapSize = 4;
+const int32_t MapLength = MapSize * MapSize * MapSize;
 
-const std::array<int32_t, MapSize* MapSize* MapSize> VoxelData = {
+const std::array<int32_t, MapLength> VoxelData = {
     1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2, // 1
     0, 0, 0, 1, 0, 0, 3, 0, 0, 4, 0, 0, 2, 0, 0, 0, // 2
     3, 2, 1, 4, 2, 0, 0, 1, 1, 0, 0, 2, 4, 1, 2, 3, // 3
@@ -147,10 +148,10 @@ class App : public IRenderer
 {
     private:
     // TODO: Give these more helpful names than _ and final_.
+    Pipeline _offscreenPipeline;
     Pipeline _pipeline;
-    Pipeline _finalPipeline;
+    RenderPass _offscreenRenderPass;
     RenderPass _renderPass;
-    RenderPass _finalRenderPass;
 
     ClearColor _clearColor;
 
@@ -166,9 +167,7 @@ class App : public IRenderer
     int32_t GetVoxel(size_t x, size_t y, size_t z)
     {
         if (x < 0 || x >= MapSize || y < 0 || y >= MapSize || z < 0 || z >= MapSize)
-        {
             return 0;
-        }
 
         return VoxelData[x + y * MapSize + z * MapSize * MapSize];
     }
@@ -236,13 +235,13 @@ class App : public IRenderer
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
         renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::ReadFromShader;
-        _renderPass = RenderPass(gpu, renderPassOptions);
-        _colorSampler = Sampler(gpu, _renderPass.GetColorImage());
+        _offscreenRenderPass = RenderPass(gpu, renderPassOptions);
+        _colorSampler = Sampler(gpu, _offscreenRenderPass.GetColorImage());
 
         RenderPassOptions finalRenderPassOptions{};
         finalRenderPassOptions.EnableDepth = true;
         finalRenderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::PresentWithMsaa;
-        _finalRenderPass = RenderPass(gpu, finalRenderPassOptions);
+        _renderPass = RenderPass(gpu, finalRenderPassOptions);
 
         VertexOptions vertexDataOptions{};
         vertexDataOptions.Binding = 0;
@@ -287,9 +286,9 @@ class App : public IRenderer
             .Type = DescriptorType::ImageSampler,
             .ShaderStage = ShaderStage::Fragment,
         });
-        _finalPipeline = Pipeline(gpu, finalPipelineOptions, _finalRenderPass);
-        _finalPipeline.UpdateUniform(0, _ubo);
-        _finalPipeline.UpdateImage(1, _renderPass.GetColorImage(), _colorSampler);
+        _pipeline = Pipeline(gpu, finalPipelineOptions, _renderPass);
+        _pipeline.UpdateUniform(0, _ubo);
+        _pipeline.UpdateImage(1, _offscreenRenderPass.GetColorImage(), _colorSampler);
 
         PipelineOptions pipelineOptions{};
         pipelineOptions.VertexShader = "res/renderTextureShader.vert.spv";
@@ -302,8 +301,8 @@ class App : public IRenderer
             .Type = DescriptorType::UniformBuffer,
             .ShaderStage = ShaderStage::Vertex,
         });
-        _pipeline = Pipeline(gpu, pipelineOptions, _renderPass);
-        _pipeline.UpdateUniform(0, _ubo);
+        _offscreenPipeline = Pipeline(gpu, pipelineOptions, _offscreenRenderPass);
+        _offscreenPipeline.UpdateUniform(0, _ubo);
     }
 
     void Update(std::shared_ptr<Gpu> gpu)
@@ -317,20 +316,20 @@ class App : public IRenderer
         gpu->Commands.BeginBuffer();
 
         _clearColor = {0.0f, 0.0f, 0.0f};
+        _offscreenRenderPass.Begin(_clearColor);
+        _offscreenPipeline.Bind();
+
+        _voxelModel.Draw();
+
+        _offscreenRenderPass.End();
+
+        _clearColor = {0.0f, 0.0f, 1.0f};
         _renderPass.Begin(_clearColor);
         _pipeline.Bind();
 
         _voxelModel.Draw();
 
         _renderPass.End();
-
-        _clearColor = {0.0f, 0.0f, 1.0f};
-        _finalRenderPass.Begin(_clearColor);
-        _finalPipeline.Bind();
-
-        _voxelModel.Draw();
-
-        _finalRenderPass.End();
 
         gpu->Commands.EndBuffer();
     }
@@ -339,9 +338,9 @@ class App : public IRenderer
     {
         UpdateProjectionMatrix(width, height);
 
+        _offscreenRenderPass.UpdateResources();
         _renderPass.UpdateResources();
-        _finalRenderPass.UpdateResources();
-        _finalPipeline.UpdateImage(1, _renderPass.GetColorImage(), _colorSampler);
+        _pipeline.UpdateImage(1, _offscreenRenderPass.GetColorImage(), _colorSampler);
     }
 };
 
