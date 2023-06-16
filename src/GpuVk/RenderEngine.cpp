@@ -29,11 +29,16 @@ void RenderEngine::InitVulkan(PresentMode preferredPresentMode, const uint32_t w
 
 void RenderEngine::MainLoop(IRenderer& renderer)
 {
+    auto lastTime = std::chrono::high_resolution_clock::now();
 
     bool isRunning = true;
     SDL_Event event;
     while (isRunning)
     {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+        lastTime = currentTime;
+
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -51,7 +56,7 @@ void RenderEngine::MainLoop(IRenderer& renderer)
             }
         }
 
-        renderer.Update(_gpu);
+        renderer.Update(_gpu, deltaTime);
         DrawFrame(renderer);
     }
 

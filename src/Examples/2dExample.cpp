@@ -194,7 +194,7 @@ class App : public IRenderer
         _offscreenPipeline.UpdateImage(1, _spriteBatch.GetImage(), _spriteBatch.GetSampler());
     }
 
-    void Update(std::shared_ptr<Gpu> gpu)
+    void Update(std::shared_ptr<Gpu> gpu, float deltaTime)
     {
         _spriteBatch.Begin();
 

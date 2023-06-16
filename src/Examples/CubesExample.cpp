@@ -277,7 +277,7 @@ class App : public IRenderer
         _offscreenPipeline.UpdateImage(1, _textureImage, _textureSampler);
     }
 
-    void Update(std::shared_ptr<Gpu> gpu)
+    void Update(std::shared_ptr<Gpu> gpu, float deltaTime)
     {
     }
 

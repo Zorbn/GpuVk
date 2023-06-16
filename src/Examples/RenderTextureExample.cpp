@@ -304,7 +304,7 @@ class App : public IRenderer
         _offscreenPipeline.UpdateUniform(0, _ubo);
     }
 
-    void Update(std::shared_ptr<Gpu> gpu)
+    void Update(std::shared_ptr<Gpu> gpu, float deltaTime)
     {
     }
 

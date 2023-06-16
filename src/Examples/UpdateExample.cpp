@@ -56,6 +56,7 @@ class App : public IRenderer
     Model<VertexData, uint16_t, InstanceData> _spriteModel;
 
     uint32_t _frameCount = 0;
+    float _time = 0.0f;
 
     void UpdateProjectionMatrix(int32_t width, int32_t height)
     {
@@ -75,6 +76,8 @@ class App : public IRenderer
         _spriteModel.UpdateInstances(instances);
 
         _ubo = UniformBuffer<UniformBufferData>(gpu);
+        _uboData.View =
+            glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         UpdateProjectionMatrix(width, height);
 
         RenderPassOptions renderPassOptions{};
@@ -130,8 +133,10 @@ class App : public IRenderer
         _offscreenPipeline.UpdateImage(1, _textureImage, _textureSampler);
     }
 
-    void Update(std::shared_ptr<Gpu> gpu)
+    void Update(std::shared_ptr<Gpu> gpu, float deltaTime)
     {
+        _time += deltaTime;
+
         uint32_t animFrame = _frameCount / 3000;
         if (_frameCount % 3000 == 0)
         {
@@ -146,13 +151,7 @@ class App : public IRenderer
 
     void Render(std::shared_ptr<Gpu> gpu)
     {
-        static auto startTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-        _uboData.Model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        _uboData.View =
-            glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        _uboData.Model = glm::rotate(glm::mat4(1.0f), _time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
         _ubo.Update(_uboData);
 
