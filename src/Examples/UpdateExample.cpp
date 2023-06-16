@@ -70,7 +70,7 @@ class App : public IRenderer
         _textureImage = Image::CreateTexture(gpu, "res/UpdateExample/updateImg.png", true);
         _textureSampler = Sampler(gpu, _textureImage);
 
-        _spriteModel = Model<VertexData, uint16_t, InstanceData>::Create(gpu, 3);
+        _spriteModel = Model<VertexData, uint16_t, InstanceData>(gpu, 3);
         std::vector<InstanceData> instances = {InstanceData{glm::vec3(1.0f, 0.0f, 0.0f)},
             InstanceData{glm::vec3(0.0f, 1.0f, 0.0f)}, InstanceData{glm::vec3(0.0f, 0.0f, 1.0f)}};
         _spriteModel.UpdateInstances(instances);

@@ -29,12 +29,12 @@ class Image
 
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
-    uint32_t GetMipmapLevels() const;
+    uint32_t GetMipmapLevelCount() const;
 
     private:
     Image(std::shared_ptr<Gpu> gpu, VkImage image, VkFormat format, VkImageAspectFlags viewAspectFlags);
     Image(std::shared_ptr<Gpu> gpu, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage,
-        VkImageAspectFlags viewAspectFlags, uint32_t mipmapLevels = 1, uint32_t layerCount = 1,
+        VkImageAspectFlags viewAspectFlags, uint32_t mipmapLevelCount = 1, uint32_t layerCount = 1,
         VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
 
     void TransitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -54,6 +54,6 @@ class Image
     uint32_t _mipmapLevelCount = 1;
 
     static Buffer LoadImage(std::shared_ptr<Gpu> gpu, const std::string& image, int32_t& width, int32_t& height);
-    static uint32_t CalcMipmapLevels(int32_t texWidth, int32_t texHeight);
+    static uint32_t CalculateMipmapLevelCount(int32_t texWidth, int32_t texHeight);
 };
 } // namespace GpuVk

@@ -22,7 +22,7 @@ Sampler::Sampler(std::shared_ptr<Gpu> gpu, const Image& image, FilterMode minFil
     samplerInfo.compareEnable = VK_FALSE;
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.maxLod = static_cast<float>(image.GetMipmapLevels());
+    samplerInfo.maxLod = static_cast<float>(image.GetMipmapLevelCount());
 
     if (vkCreateSampler(_gpu->_device, &samplerInfo, nullptr, &_sampler) != VK_SUCCESS)
     {

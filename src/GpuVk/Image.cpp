@@ -14,9 +14,9 @@ Image::Image(std::shared_ptr<Gpu> gpu, VkImage image, VkFormat format, VkImageAs
 }
 
 Image::Image(std::shared_ptr<Gpu> gpu, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage,
-    VkImageAspectFlags viewAspectFlags, uint32_t mipmapLevels, uint32_t layerCount, VkSampleCountFlagBits samples)
+    VkImageAspectFlags viewAspectFlags, uint32_t mipmapLevelCount, uint32_t layerCount, VkSampleCountFlagBits samples)
     : _gpu(gpu), _format(format), _layerCount(layerCount), _width(width), _height(height),
-      _mipmapLevelCount(mipmapLevels)
+      _mipmapLevelCount(mipmapLevelCount)
 {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -24,7 +24,7 @@ Image::Image(std::shared_ptr<Gpu> gpu, uint32_t width, uint32_t height, VkFormat
     imageInfo.extent.width = width;
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipmapLevels;
+    imageInfo.mipLevels = mipmapLevelCount;
     imageInfo.arrayLayers = _layerCount;
     imageInfo.format = format;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -192,7 +192,7 @@ Image Image::CreateTexture(std::shared_ptr<Gpu> gpu, const std::string& image, b
 {
     int32_t texWidth, texHeight;
     Buffer stagingBuffer = LoadImage(gpu, image, texWidth, texHeight);
-    uint32_t mipMapLevels = enableMipmaps ? CalcMipmapLevels(texWidth, texHeight) : 1;
+    uint32_t mipMapLevels = enableMipmaps ? CalculateMipmapLevelCount(texWidth, texHeight) : 1;
 
     Image textureImage = Image(gpu, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -211,7 +211,7 @@ Image Image::CreateTextureArray(std::shared_ptr<Gpu> gpu, const std::string& ima
 {
     int32_t texWidth, texHeight;
     Buffer stagingBuffer = LoadImage(gpu, image, texWidth, texHeight);
-    uint32_t mipMapLevels = enableMipmaps ? CalcMipmapLevels(width, height) : 1;
+    uint32_t mipMapLevels = enableMipmaps ? CalculateMipmapLevelCount(width, height) : 1;
 
     Image textureImage = Image(gpu, width, height, VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -336,7 +336,7 @@ void Image::CopyFromBuffer(Buffer& src, uint32_t fullWidth, uint32_t fullHeight)
     _gpu->Commands.EndSingleTime(commandBuffer);
 }
 
-uint32_t Image::CalcMipmapLevels(int32_t texWidth, int32_t texHeight)
+uint32_t Image::CalculateMipmapLevelCount(int32_t texWidth, int32_t texHeight)
 {
     return static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 }
@@ -351,7 +351,7 @@ uint32_t Image::GetHeight() const
     return _height;
 }
 
-uint32_t Image::GetMipmapLevels() const
+uint32_t Image::GetMipmapLevelCount() const
 {
     return _mipmapLevelCount;
 }

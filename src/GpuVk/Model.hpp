@@ -8,14 +8,11 @@ template <typename V, typename I, typename D> class Model
 {
     public:
     Model() = default;
-    Model(std::shared_ptr<Gpu> gpu) : _gpu(gpu)
-    {
-    }
 
     static Model<V, I, D> FromVerticesAndIndices(std::shared_ptr<Gpu> gpu, const std::vector<V>& vertices,
         const std::vector<I> indices, const size_t maxInstances)
     {
-        Model model = Create(gpu, maxInstances);
+        Model model(gpu, maxInstances);
         model._size = indices.size();
 
         model._indexBuffer = Buffer::FromIndices(gpu, indices);
@@ -24,17 +21,13 @@ template <typename V, typename I, typename D> class Model
         return model;
     }
 
-    static Model<V, I, D> Create(std::shared_ptr<Gpu> gpu, const size_t maxInstances)
+    Model(std::shared_ptr<Gpu> gpu, const size_t maxInstances) : _gpu(gpu)
     {
-        Model model(gpu);
-
         size_t instanceByteSize = maxInstances * sizeof(D);
-        model._instanceStagingBuffer = Buffer(gpu, instanceByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
-        model._instanceBuffer =
+        _instanceStagingBuffer = Buffer(gpu, instanceByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
+        _instanceBuffer =
             Buffer(gpu, instanceByteSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
-
-        return model;
-    };
+    }
 
     void Draw()
     {
