@@ -52,7 +52,7 @@ class RenderEngine
         {
             auto _ = std::move(renderer);
         }
-        Cleanup(renderer);
+        Cleanup();
     }
 
     private:
@@ -68,6 +68,6 @@ class RenderEngine
     void MainLoop(IRenderer&);
     void DrawFrame(IRenderer&);
     void WaitWhileMinimized();
-    void Cleanup(IRenderer&);
+    void Cleanup();
 };
 } // namespace GpuVk

@@ -2,7 +2,6 @@
 #include "Constants.hpp"
 #include "Gpu.hpp"
 
-#include <cassert>
 #include <stdexcept>
 
 namespace GpuVk
@@ -61,7 +60,7 @@ void Commands::CreateBuffers()
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = _commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)_buffers.size();
+    allocInfo.commandBufferCount = static_cast<uint32_t>(_buffers.size());
 
     if (vkAllocateCommandBuffers(_gpu->_device, &allocInfo, _buffers.data()) != VK_SUCCESS)
     {

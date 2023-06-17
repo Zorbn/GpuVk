@@ -162,9 +162,7 @@ void RenderPass::CreateImages()
     vkGetSwapchainImagesKHR(_gpu->_device, vkSwapchain, &imageCount, vkImages.data());
 
     for (VkImage vkImage : vkImages)
-    {
         _images.push_back(Image(_gpu, vkImage, format, VK_IMAGE_ASPECT_COLOR_BIT));
-    }
 }
 
 void RenderPass::Begin(const ClearColor& clearColor)
@@ -257,9 +255,7 @@ void RenderPass::CreateFramebuffers()
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(_gpu->_device, &framebufferInfo, nullptr, &_framebuffers[i]) != VK_SUCCESS)
-        {
             throw std::runtime_error("Failed to create framebuffer!");
-        }
     }
 }
 
@@ -334,9 +330,7 @@ VkFormat RenderPass::FindDepthFormat()
 void RenderPass::CleanupResources()
 {
     for (auto framebuffer : _framebuffers)
-    {
         vkDestroyFramebuffer(_gpu->_device, framebuffer, nullptr);
-    }
 }
 
 const VkSampleCountFlagBits RenderPass::GetMaxUsableSampleCount(VkPhysicalDevice physicalDevice)

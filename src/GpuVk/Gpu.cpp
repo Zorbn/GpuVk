@@ -12,8 +12,8 @@ const std::vector<const char*> DeviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NA
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-    auto function =
-        (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    auto function = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 
     if (function)
         return function(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -24,8 +24,8 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(
     VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
-    auto function =
-        (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto function = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
     if (function)
         function(instance, debugMessenger, pAllocator);
@@ -339,7 +339,7 @@ bool Gpu::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
     bool swapChainAdequate;
     if (extensionsSupported)
     {
-        SwapchainSupportDetails swapchainSupport = Swapchain::QuerySupport(physicalDevice, _surface);
+        auto swapchainSupport = Swapchain::QuerySupport(physicalDevice, _surface);
         swapChainAdequate = !swapchainSupport.Formats.empty() && !swapchainSupport.PresentModes.empty();
     }
 

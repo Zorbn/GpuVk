@@ -19,13 +19,11 @@ class Buffer
     public:
     template <typename T> static Buffer FromIndices(std::shared_ptr<Gpu> gpu, const std::vector<T>& indices)
     {
-        size_t indexSize = sizeof(indices[0]);
+        size_t indexSize = sizeof(T);
 
         // Only accept 16 or 32 bit types.
         if (indexSize != 2 && indexSize != 4)
-        {
             throw std::runtime_error("Incorrect size when creating index buffer, indices should be 16 or 32 bit!");
-        }
 
         VkDeviceSize bufferByteSize = indexSize * indices.size();
 
@@ -42,7 +40,7 @@ class Buffer
 
     template <typename T> static Buffer FromVertices(std::shared_ptr<Gpu> gpu, const std::vector<T>& vertices)
     {
-        VkDeviceSize bufferByteSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferByteSize = sizeof(T) * vertices.size();
 
         Buffer stagingBuffer(gpu, bufferByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
         stagingBuffer.SetData(vertices.data());

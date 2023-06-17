@@ -46,18 +46,14 @@ template <typename T> class UniformBuffer
     {
         size_t bufferCount = _buffers.size();
         for (size_t i = 0; i < bufferCount; i++)
-        {
             _buffers[i].Unmap();
-        }
     }
 
     void Update(const T& data)
     {
         size_t bufferCount = _buffersMapped.size();
         for (size_t i = 0; i < bufferCount; i++)
-        {
             memcpy(_buffersMapped[i], &data, sizeof(T));
-        }
     }
 
     size_t GetDataSize() const

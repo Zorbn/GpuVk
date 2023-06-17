@@ -10,9 +10,9 @@ template <typename V, typename I, typename D> class Model
     Model() = default;
 
     static Model<V, I, D> FromVerticesAndIndices(std::shared_ptr<Gpu> gpu, const std::vector<V>& vertices,
-        const std::vector<I> indices, const size_t maxInstances)
+        const std::vector<I> indices, const size_t maxInstanceCount)
     {
-        Model model(gpu, maxInstances);
+        Model model(gpu, maxInstanceCount);
         model._size = indices.size();
 
         model._indexBuffer = Buffer::FromIndices(gpu, indices);
@@ -21,9 +21,9 @@ template <typename V, typename I, typename D> class Model
         return model;
     }
 
-    Model(std::shared_ptr<Gpu> gpu, const size_t maxInstances) : _gpu(gpu)
+    Model(std::shared_ptr<Gpu> gpu, const size_t maxInstanceCount) : _gpu(gpu)
     {
-        size_t instanceByteSize = maxInstances * sizeof(D);
+        size_t instanceByteSize = maxInstanceCount * sizeof(D);
         _instanceStagingBuffer = Buffer(gpu, instanceByteSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, true);
         _instanceBuffer =
             Buffer(gpu, instanceByteSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);

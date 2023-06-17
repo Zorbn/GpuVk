@@ -66,19 +66,15 @@ void Pipeline::UpdateImage(uint32_t binding, const Image& image, const Sampler& 
 
 VkDescriptorType Pipeline::GetVkDescriptorType(DescriptorType descriptorType)
 {
-    VkDescriptorType vkDescriptorType;
-
     switch (descriptorType)
     {
         case DescriptorType::UniformBuffer:
-            vkDescriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            break;
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         case DescriptorType::ImageSampler:
-            vkDescriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            break;
+            return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        default:
+            throw std::runtime_error("Tried to get a VkDescriptorType from an invalid descriptor type!");
     }
-
-    return vkDescriptorType;
 }
 
 void Pipeline::CreateDescriptorSetLayout()
@@ -112,9 +108,7 @@ void Pipeline::CreateDescriptorSetLayout()
     layoutInfo.pBindings = bindings.data();
 
     if (vkCreateDescriptorSetLayout(_gpu->_device, &layoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to create descriptor set layout!");
-    }
 }
 
 void Pipeline::CreateDescriptorPool()
@@ -136,9 +130,7 @@ void Pipeline::CreateDescriptorPool()
     poolInfo.maxSets = static_cast<uint32_t>(MaxFramesInFlight);
 
     if (vkCreateDescriptorPool(_gpu->_device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to create descriptor pool!");
-    }
 }
 
 void Pipeline::CreateDescriptorSets()
@@ -152,9 +144,7 @@ void Pipeline::CreateDescriptorSets()
 
     _descriptorSets.resize(MaxFramesInFlight);
     if (vkAllocateDescriptorSets(_gpu->_device, &allocInfo, _descriptorSets.data()) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to allocate descriptor sets!");
-    }
 }
 
 std::array<VkVertexInputBindingDescription, 2> Pipeline::CreateVertexInputBindingDescriptions(
@@ -352,9 +342,7 @@ void Pipeline::Create(const PipelineOptions& pipelineOptions, const RenderPass& 
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     if (vkCreateGraphicsPipelines(_gpu->_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to create graphics pipeline!");
-    }
 
     vkDestroyShaderModule(_gpu->_device, fragShaderModule, nullptr);
     vkDestroyShaderModule(_gpu->_device, vertShaderModule, nullptr);
@@ -377,9 +365,7 @@ VkShaderModule Pipeline::CreateShaderModule(const std::vector<char>& code, VkDev
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to create shader module!");
-    }
 
     return shaderModule;
 }

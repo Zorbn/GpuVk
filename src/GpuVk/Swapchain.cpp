@@ -38,11 +38,10 @@ Swapchain::~Swapchain()
 
 void Swapchain::Create(int32_t windowWidth, int32_t windowHeight)
 {
-    SwapchainSupportDetails swapchainSupport = QuerySupport(_gpu->_physicalDevice, _gpu->_surface);
+    auto swapchainSupport = QuerySupport(_gpu->_physicalDevice, _gpu->_surface);
 
-    VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapchainSupport.Formats);
-    VkPresentModeKHR presentMode =
-        ChoosePresentMode(swapchainSupport.PresentModes, GetVkPresentMode(_preferredPresentMode));
+    auto surfaceFormat = ChooseSurfaceFormat(swapchainSupport.Formats);
+    auto presentMode = ChoosePresentMode(swapchainSupport.PresentModes, GetVkPresentMode(_preferredPresentMode));
     _extent = ChooseExtent(swapchainSupport.Capabilities, windowWidth, windowHeight);
 
     uint32_t imageCount = swapchainSupport.Capabilities.minImageCount + 1;
@@ -62,7 +61,7 @@ void Swapchain::Create(int32_t windowWidth, int32_t windowHeight)
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(_gpu->_physicalDevice, _gpu->_surface);
+    auto indices = QueueFamilyIndices::FindQueueFamilies(_gpu->_physicalDevice, _gpu->_surface);
     uint32_t queueFamilyIndices[] = {indices._graphicsFamily.value(), indices._presentFamily.value()};
 
     if (indices._graphicsFamily != indices._presentFamily)

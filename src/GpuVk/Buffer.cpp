@@ -57,7 +57,7 @@ void Buffer::CopyTo(Buffer& dst)
     if (_byteSize == 0 || dst.GetSize() == 0)
         return;
 
-    VkCommandBuffer commandBuffer = _gpu->Commands.BeginSingleTime();
+    auto commandBuffer = _gpu->Commands.BeginSingleTime();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = dst._byteSize;

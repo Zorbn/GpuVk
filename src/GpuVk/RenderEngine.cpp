@@ -45,10 +45,7 @@ void RenderEngine::MainLoop(IRenderer& renderer)
             {
                 case SDL_WINDOWEVENT:
                     if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-                    {
                         _framebufferResized = true;
-                    }
-
                     break;
                 case SDL_QUIT:
                     isRunning = false;
@@ -75,7 +72,7 @@ void RenderEngine::WaitWhileMinimized()
     }
 }
 
-void RenderEngine::Cleanup(IRenderer& renderer)
+void RenderEngine::Cleanup()
 {
     _gpu->Cleanup();
 
@@ -88,7 +85,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
 {
     vkWaitForFences(_gpu->_device, 1, &_gpu->GetCurrentInFlightFence(), VK_TRUE, UINT64_MAX);
 
-    VkResult result = _gpu->Swapchain.GetNextImage();
+    auto result = _gpu->Swapchain.GetNextImage();
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -108,7 +105,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
     vkResetFences(_gpu->_device, 1, &_gpu->GetCurrentInFlightFence());
 
     _gpu->Commands.ResetBuffer();
-    const VkCommandBuffer& currentBuffer = _gpu->Commands.GetBuffer();
+    auto currentBuffer = _gpu->Commands.GetBuffer();
     renderer.Render(_gpu);
 
     VkSubmitInfo submitInfo{};
@@ -128,9 +125,7 @@ void RenderEngine::DrawFrame(IRenderer& renderer)
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     if (vkQueueSubmit(_gpu->_graphicsQueue, 1, &submitInfo, _gpu->GetCurrentInFlightFence()) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to submit draw command buffer!");
-    }
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

@@ -25,9 +25,7 @@ Sampler::Sampler(std::shared_ptr<Gpu> gpu, const Image& image, FilterMode minFil
     samplerInfo.maxLod = static_cast<float>(image.GetMipmapLevelCount());
 
     if (vkCreateSampler(_gpu->_device, &samplerInfo, nullptr, &_sampler) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to create texture sampler!");
-    }
 }
 
 Sampler::Sampler(Sampler&& other)
