@@ -100,8 +100,8 @@ class SpriteBatch
 class App : public IRenderer
 {
     private:
-    Pipeline _offscreenPipeline;
-    RenderPass _offscreenRenderPass;
+    Pipeline _pipeline;
+    RenderPass _renderPass;
 
     ClearColor _clearColor;
 
@@ -129,7 +129,7 @@ class App : public IRenderer
         RenderPassOptions renderPassOptions{};
         renderPassOptions.EnableDepth = true;
         renderPassOptions.ColorAttachmentUsage = ColorAttachmentUsage::Present;
-        _offscreenRenderPass = RenderPass(gpu, renderPassOptions);
+        _renderPass = RenderPass(gpu, renderPassOptions);
 
         VertexOptions vertexDataOptions{};
         vertexDataOptions.Binding = 0;
@@ -189,9 +189,9 @@ class App : public IRenderer
             .Type = DescriptorType::ImageSampler,
             .ShaderStage = ShaderStage::Fragment,
         });
-        _offscreenPipeline = Pipeline(gpu, pipelineOptions, _offscreenRenderPass);
-        _offscreenPipeline.UpdateUniform(0, _ubo);
-        _offscreenPipeline.UpdateImage(1, _spriteBatch.GetImage(), _spriteBatch.GetSampler());
+        _pipeline = Pipeline(gpu, pipelineOptions, _renderPass);
+        _pipeline.UpdateUniform(0, _ubo);
+        _pipeline.UpdateImage(1, _spriteBatch.GetImage(), _spriteBatch.GetSampler());
     }
 
     void Update(std::shared_ptr<Gpu> gpu, float deltaTime)
@@ -210,12 +210,12 @@ class App : public IRenderer
 
         gpu->Commands.BeginBuffer();
 
-        _offscreenRenderPass.Begin(_clearColor);
-        _offscreenPipeline.Bind();
+        _renderPass.Begin(_clearColor);
+        _pipeline.Bind();
 
         _spriteBatch.Draw();
 
-        _offscreenRenderPass.End();
+        _renderPass.End();
 
         gpu->Commands.EndBuffer();
     }
@@ -224,7 +224,7 @@ class App : public IRenderer
     {
         UpdateProjectionMatrix(width, height);
 
-        _offscreenRenderPass.UpdateResources();
+        _renderPass.UpdateResources();
     }
 };
 
