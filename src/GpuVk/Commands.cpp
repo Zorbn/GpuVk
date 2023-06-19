@@ -38,8 +38,7 @@ Commands::~Commands()
 
 void Commands::CreatePool()
 {
-    QueueFamilyIndices queueFamilyIndices =
-        QueueFamilyIndices::FindQueueFamilies(_gpu->_physicalDevice, _gpu->_surface);
+    auto queueFamilyIndices = QueueFamilyIndices(_gpu->_physicalDevice, _gpu->_surface);
 
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -47,9 +46,7 @@ void Commands::CreatePool()
     poolInfo.queueFamilyIndex = queueFamilyIndices._graphicsFamily.value();
 
     if (vkCreateCommandPool(_gpu->_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to create graphics command pool!");
-    }
 }
 
 void Commands::CreateBuffers()
@@ -63,9 +60,7 @@ void Commands::CreateBuffers()
     allocInfo.commandBufferCount = static_cast<uint32_t>(_buffers.size());
 
     if (vkAllocateCommandBuffers(_gpu->_device, &allocInfo, _buffers.data()) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to allocate command buffers!");
-    }
 }
 
 VkCommandBuffer Commands::BeginSingleTime() const
@@ -114,17 +109,13 @@ void Commands::BeginBuffer()
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
     if (vkBeginCommandBuffer(_buffers[_currentBufferIndex], &beginInfo) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to begin recording command buffer!");
-    }
 }
 
 void Commands::EndBuffer()
 {
     if (vkEndCommandBuffer(_buffers[_currentBufferIndex]) != VK_SUCCESS)
-    {
         throw std::runtime_error("Failed to record command buffer!");
-    }
 }
 
 const VkCommandBuffer& Commands::GetBuffer() const

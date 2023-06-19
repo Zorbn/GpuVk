@@ -61,7 +61,7 @@ void Swapchain::Create(int32_t windowWidth, int32_t windowHeight)
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    auto indices = QueueFamilyIndices::FindQueueFamilies(_gpu->_physicalDevice, _gpu->_surface);
+    auto indices = QueueFamilyIndices(_gpu->_physicalDevice, _gpu->_surface);
     uint32_t queueFamilyIndices[] = {indices._graphicsFamily.value(), indices._presentFamily.value()};
 
     if (indices._graphicsFamily != indices._presentFamily)

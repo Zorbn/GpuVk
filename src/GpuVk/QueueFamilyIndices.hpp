@@ -14,15 +14,8 @@ class QueueFamilyIndices
     std::optional<uint32_t> _graphicsFamily;
     std::optional<uint32_t> _presentFamily;
 
-    bool IsComplete()
+    QueueFamilyIndices(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
-        return _graphicsFamily.has_value() && _presentFamily.has_value();
-    }
-
-    static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-    {
-        QueueFamilyIndices indices;
-
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
@@ -33,20 +26,23 @@ class QueueFamilyIndices
         for (const auto& queueFamily : queueFamilies)
         {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-                indices._graphicsFamily = i;
+                _graphicsFamily = i;
 
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
 
             if (presentSupport)
-                indices._presentFamily = i;
-            if (indices.IsComplete())
+                _presentFamily = i;
+            if (IsComplete())
                 break;
 
             i++;
         }
+    }
 
-        return indices;
+    bool IsComplete()
+    {
+        return _graphicsFamily.has_value() && _presentFamily.has_value();
     }
 };
 } // namespace GpuVk

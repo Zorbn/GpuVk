@@ -282,7 +282,7 @@ void Gpu::PickPhysicalDevice()
 
 void Gpu::CreateLogicalDevice()
 {
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(_physicalDevice, _surface);
+    auto indices = QueueFamilyIndices(_physicalDevice, _surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices._graphicsFamily.value(), indices._presentFamily.value()};
@@ -332,7 +332,7 @@ void Gpu::CreateLogicalDevice()
 
 bool Gpu::IsDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(physicalDevice, _surface);
+    auto indices = QueueFamilyIndices(physicalDevice, _surface);
 
     bool extensionsSupported = CheckDeviceExtensionSupport(physicalDevice);
 
